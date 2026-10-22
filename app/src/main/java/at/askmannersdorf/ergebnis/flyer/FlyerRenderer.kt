@@ -187,16 +187,17 @@ class FlyerRenderer(private val context: Context) {
         val hasBox = labels.isNotEmpty()
         val boxH = if (hasBox) 58f + 54f * lines.size + 12f else 0f
         val boxTop = boxBottom - boxH
-        val namesBase = (if (hasBox) boxTop else boxBottom) - 34f
-        val digitsBase = namesBase - 62f
-        val scorePaint = textPaint(fHeavy, 290f, Color.WHITE)
+        // Ergebnis direkt über der Box (Teamnamen stehen schon bei den Logos)
+        val scoreSize = 245f
+        val digitsBase = (if (hasBox) boxTop else boxBottom) - 40f
+        val scorePaint = textPaint(fHeavy, scoreSize, Color.WHITE)
         val bounds = Rect(); scorePaint.getTextBounds("14", 0, 2, bounds)
         val digitsTop = digitsBase + bounds.top
-        val titleBase = digitsTop - 34f
+        val titleBase = digitsTop - 30f
 
         // Titel (schräg, Pinselschrift) + Unterstrich
         val (p1, p2) = titleParts(input)
-        val titlePaint = textPaint(fBrush, 175f, Color.WHITE)
+        val titlePaint = textPaint(fBrush, 150f, Color.WHITE)
         while (titlePaint.measureText(p1 + p2) > w - 70f && titlePaint.textSize > 60f) titlePaint.textSize -= 4f
         val tx = (w - titlePaint.measureText(p1 + p2)) / 2f
         c.save()
@@ -205,24 +206,17 @@ class FlyerRenderer(private val context: Context) {
             specks = 0, shadow = true, dry = 170, bold = 4f)
         textBlock(c, rnd, p2, tx + titlePaint.measureText(p1), titleBase, fBrush, titlePaint.textSize,
             if (outcome == Outcome.LOSS) GREY else ACCENT, Paint.Align.LEFT, specks = 0, shadow = true, dry = 170, bold = 4f)
-        brushStroke(c, rnd, 60f, titleBase + 42f, w - 60f, titleBase + 18f, 16f, ACCENT, 230)
+        brushStroke(c, rnd, 80f, titleBase + 36f, w - 80f, titleBase + 16f, 14f, ACCENT, 230)
         c.restore()
 
         // Ergebnis
-        val cxHome = w / 2f - 215f
-        val cxAway = w / 2f + 215f
-        textBlock(c, rnd, m.homeGoals?.toString() ?: "-", cxHome, digitsBase, fHeavy, 290f,
+        val cxHome = w / 2f - 190f
+        val cxAway = w / 2f + 190f
+        textBlock(c, rnd, m.homeGoals?.toString() ?: "-", cxHome, digitsBase, fHeavy, scoreSize,
             if (askHome) ACCENT else Color.WHITE, Paint.Align.CENTER, specks = 2600, shadow = true)
-        textBlock(c, rnd, m.awayGoals?.toString() ?: "-", cxAway, digitsBase, fHeavy, 290f,
+        textBlock(c, rnd, m.awayGoals?.toString() ?: "-", cxAway, digitsBase, fHeavy, scoreSize,
             if (askHome) Color.WHITE else ACCENT, Paint.Align.CENTER, specks = 2600, shadow = true)
-        textBlock(c, rnd, ":", w / 2f, digitsBase - 40f, fHeavy, 170f, Color.WHITE, Paint.Align.CENTER, specks = 200, shadow = true)
-        for ((cx, label) in listOf(cxHome to input.homeLabel.uppercase(), cxAway to input.awayLabel.uppercase())) {
-            val np = textPaint(fHeavy, 40f, Color.WHITE).apply {
-                textAlign = Paint.Align.CENTER; setShadowLayer(6f, 0f, 4f, withAlpha(Color.BLACK, 170))
-            }
-            while (np.measureText(label) > 400f && np.textSize > 24f) np.textSize -= 2f
-            c.drawText(label, cx, namesBase, np)
-        }
+        textBlock(c, rnd, ":", w / 2f, digitsBase - 34f, fHeavy, 145f, Color.WHITE, Paint.Align.CENTER, specks = 200, shadow = true)
 
         // Torschützen-Box
         if (hasBox) {
