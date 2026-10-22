@@ -3,16 +3,31 @@ package at.askmannersdorf.ergebnis.flyer
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RadialGradient
 import android.graphics.Rect
 import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.Typeface
 import androidx.core.content.res.ResourcesCompat
 import at.askmannersdorf.ergebnis.R
 import at.askmannersdorf.ergebnis.model.Match
 import at.askmannersdorf.ergebnis.model.Outcome
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.random.Random
 
 enum class FlyerFormat(val width: Int, val height: Int, val label: String) {
     FEED(1080, 1350, "Feed 4:5"),
@@ -27,36 +42,45 @@ data class FlyerInput(
     val photo: Bitmap?,
     val opponentLogo: Bitmap?,
     val showMinutes: Boolean,
+    /** Kurznamen unter dem Ergebnis, z. B. "Weissenbach" / "Mannersdorf". */
+    val homeLabel: String,
+    val awayLabel: String,
+    /** Eigener Kurzname für "TORE FÜR …". */
+    val ownShort: String,
 )
 
 /**
- * Zeichnet den Ergebnis-Flyer im Stil der Vorlage (Endstand-Tag, Foto, Titelband,
- * Logos + Ergebnis, Torschützen, Fußzeile). Alle Maße beziehen sich auf 1080 px Breite.
+ * Ergebnis-Flyer im "Matchday"-Stil: Logos mit VS, Mannschaftsfoto, Pinsel-Titel,
+ * großes Ergebnis mit Struktur, Torschützen-Box und Hashtag.
+ * Maße beziehen sich auf 1080 px Breite; der untere Block wird von unten aufgebaut,
+ * damit Feed (4:5) und Story (9:16) dasselbe Layout nutzen.
  */
 class FlyerRenderer(private val context: Context) {
 
     companion object {
-        val DARK_GREEN = Color.rgb(0x0A, 0x3F, 0x1C)
-        val DARKER_GREEN = Color.rgb(0x06, 0x28, 0x12)
-        val LIME = Color.rgb(0xB9, 0xF2, 0x3C)
-        val GREY_GREEN = Color.rgb(0x91, 0xA8, 0x99)
-        val LIGHT_GREY = Color.rgb(0xCD, 0xD4, 0xD0)
-        val DIVIDER = Color.rgb(0x36, 0x62, 0x45)
-        const val PANEL_HEIGHT = 652f
+        /** gedämpftes Rasengrün statt Neon */
+        val ACCENT = Color.rgb(0x5D, 0xB8, 0x5F)
+        val ACCENT_DARK = Color.rgb(0x2E, 0x7D, 0x32)
+        val BG = Color.rgb(6, 20, 11)
+        val GREY = Color.rgb(0xB8, 0xC4, 0xBC)
+        private fun withAlpha(c: Int, a: Int) = Color.argb(a, Color.red(c), Color.green(c), Color.blue(c))
     }
 
-    private val bebas: Typeface by lazy { ResourcesCompat.getFont(context, R.font.bebas_neue) ?: Typeface.DEFAULT_BOLD }
-    private val barlowBold: Typeface by lazy { ResourcesCompat.getFont(context, R.font.barlow_condensed_bold) ?: Typeface.DEFAULT_BOLD }
-    private val barlowSemi: Typeface by lazy { ResourcesCompat.getFont(context, R.font.barlow_condensed_semibold) ?: Typeface.DEFAULT }
+    private fun font(id: Int) = ResourcesCompat.getFont(context, id) ?: Typeface.DEFAULT_BOLD
+    private val fBrush by lazy { font(R.font.knewave) }
+    private val fScript by lazy { font(R.font.kaushan_script) }
+    private val fHeavy by lazy { font(R.font.archivo_black) }
+    private val fCond by lazy { font(R.font.barlow_condensed_bold) }
     private val askLogo: Bitmap by lazy { BitmapFactory.decodeResource(context.resources, R.drawable.ask_logo) }
 
-    fun title(input: FlyerInput): String {
+    /** Titel in zwei Teilen: weiß + grün (bei Niederlage grau). */
+    fun titleParts(input: FlyerInput): Pair<String, String> {
         val m = input.match
         return when (m.outcome(input.clubKeyword)) {
-            Outcome.WIN -> if (m.isAskHome(input.clubKeyword)) "HEIMSIEG!" else "AUSWÄRTSSIEG!"
-            Outcome.DRAW -> "UNENTSCHIEDEN!"
-            Outcome.LOSS -> "NIEDERLAGE"
-            null -> "ENDSTAND"
+            Outcome.WIN -> (if (m.isAskHome(input.clubKeyword)) "HEIM" else "AUSWÄRTS") to "SIEG!"
+            Outcome.DRAW -> "PUNKTE" to "TEILUNG"
+            Outcome.LOSS -> "NIEDER" to "LAGE"
+            null -> "END" to "STAND"
         }
     }
 
@@ -65,225 +89,288 @@ class FlyerRenderer(private val context: Context) {
         val h = format.height.toFloat()
         val bmp = Bitmap.createBitmap(format.width, format.height, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
+        val rnd = Random(7)
         val m = input.match
         val kw = input.clubKeyword
+        val askHome = m.isAskHome(kw)
         val outcome = m.outcome(kw)
-
-        val photoBottom = h - PANEL_HEIGHT
         val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
-        // ── Hintergrund + Foto ───────────────────────────────────────
-        c.drawColor(DARK_GREEN)
-        if (input.photo != null) {
-            drawCenterCrop(c, input.photo, RectF(0f, 0f, w, photoBottom), focusY = 0.4f)
-        } else {
-            p.color = DARKER_GREEN
-            c.drawRect(0f, 0f, w, photoBottom, p)
+        // ── Hintergrund ──────────────────────────────────────────────
+        c.drawColor(BG)
+        p.shader = LinearGradient(0f, 0f, 0f, h,
+            intArrayOf(Color.rgb(8, 26, 14), Color.rgb(6, 20, 11), Color.rgb(12, 40, 20)),
+            floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w, h, p); p.shader = null
+        glow(c, -120f + 450f, h - 620f + 450f, 450f, ACCENT, 70)
+        glow(c, w - 780f + 450f, h - 620f + 450f, 450f, ACCENT, 70)
+
+        // ── Foto als Band, oben/unten weich ausgeblendet ─────────────
+        val bandTop = 200f
+        val bandBot = h - 420f
+        input.photo?.let { photo ->
+            val layer = c.saveLayer(0f, bandTop, w, bandBot, null)
+            drawCenterCrop(c, photo, RectF(0f, bandTop, w, bandBot), 0.4f)
+            val fadeT = 150f / (bandBot - bandTop)
+            val fadeB = 1f - 260f / (bandBot - bandTop)
+            val mask = Paint().apply {
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+                shader = LinearGradient(0f, bandTop, 0f, bandBot,
+                    intArrayOf(Color.TRANSPARENT, withAlpha(Color.BLACK, 120), Color.BLACK, Color.BLACK, withAlpha(Color.BLACK, 110), Color.TRANSPARENT),
+                    floatArrayOf(0f, fadeT * 0.55f, fadeT, fadeB, fadeB + (1 - fadeB) * 0.5f, 1f), Shader.TileMode.CLAMP)
+            }
+            c.drawRect(0f, bandTop, w, bandBot, mask)
+            c.restoreToCount(layer)
+        }
+        // Vignette links/rechts
+        val vig = withAlpha(Color.rgb(3, 10, 6), 120)
+        p.shader = LinearGradient(0f, 0f, 160f, 0f, vig, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, 160f, h, p)
+        p.shader = LinearGradient(w, 0f, w - 160f, 0f, vig, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(w - 160f, 0f, w, h, p)
+        // oben abdunkeln für die Logos
+        p.shader = LinearGradient(0f, 0f, 0f, 260f, withAlpha(Color.rgb(4, 14, 8), 160), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w, 260f, p); p.shader = null
+
+        // ── Flutlicht oben links/rechts ──────────────────────────────
+        for (cx in floatArrayOf(60f, w - 60f)) {
+            glow(c, cx, 20f, 380f, Color.rgb(225, 255, 230), 185)
+            val sgn = if (cx < w / 2) 1f else -1f
+            for ((blur, a) in listOf(22f to 255, 10f to 255, 4f to 255)) {
+                val dp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = withAlpha(Color.WHITE, a); maskFilter = BlurMaskFilter(blur, BlurMaskFilter.Blur.NORMAL)
+                }
+                for (r in 0 until 3) for (col in 0 until 4) {
+                    c.drawCircle(cx + sgn * (col * 30f + r * 6f), 26f + r * 26f - col * 3f, 7f, dp)
+                }
+            }
         }
 
-        // ── Tag "● ENDSTAND" ────────────────────────────────────────
-        p.color = DARK_GREEN
-        c.drawRect(40f, 40f, 255f, 92f, p)
-        p.color = LIME
-        c.drawCircle(64f, 66f, 6f, p)
-        drawSpaced(c, "ENDSTAND", 82f, 79f, barlowBold, 34f, Color.WHITE, spacing = 0.12f)
-
-        // ── Titelband ────────────────────────────────────────────────
-        val title = title(input)
-        val titlePaint = textPaint(bebas, 124f, DARK_GREEN)
-        var titleSize = 124f
-        while (titlePaint.measureText(title) > w - 140f && titleSize > 60f) {
-            titleSize -= 4f; titlePaint.textSize = titleSize
+        // ── Pinselstriche an den Rändern ─────────────────────────────
+        for (side in 0..1) for (k in 0 until 9) {
+            val y = rnd.nextFloat(h * 0.02f, h * 0.9f)
+            val x = if (side == 0) 0f else w
+            val dx = rnd.nextFloat(60f, 170f) * if (side == 0) 1 else -1
+            brushStroke(c, rnd, x - dx * 0.4f, y + rnd.nextFloat(50f, 130f), x + dx, y - rnd.nextFloat(30f, 110f),
+                rnd.nextFloat(4f, 26f), if (k % 3 != 0) ACCENT else ACCENT_DARK, rnd.nextInt(70, 161))
         }
-        val bandTop = photoBottom - 118f
-        val bandRight = maxOf(626f, 43f + titlePaint.measureText(title) + 44f)
-        p.color = if (outcome == Outcome.LOSS) GREY_GREEN else LIME
-        c.drawRect(0f, bandTop, bandRight, photoBottom, p)
-        c.drawText(title, 36f, photoBottom - 18f, titlePaint)
 
-        // ── Panel ────────────────────────────────────────────────────
-        p.color = DARK_GREEN
-        c.drawRect(0f, photoBottom, w, h, p)
-        val y0 = photoBottom // alle Panel-Maße relativ dazu (Vorlage: 698)
-
-        val askHome = m.isAskHome(kw)
-        val leftCenterX = 176f
-        val rightCenterX = 904f
-        val logoY = y0 + 160f
+        // ── Logos + VS ───────────────────────────────────────────────
+        val logoCy = 205f
+        val box = 300f
         val homeLogo = if (askHome) askLogo else input.opponentLogo
         val awayLogo = if (askHome) input.opponentLogo else askLogo
-        drawLogoBadge(c, leftCenterX, logoY, homeLogo, m.homeTeam)
-        drawLogoBadge(c, rightCenterX, logoY, awayLogo, m.awayTeam)
+        drawLogo(c, homeLogo, 290f, logoCy, box, m.homeTeam)
+        drawLogo(c, awayLogo, w - 290f, logoCy, box, m.awayTeam)
+        brushStroke(c, rnd, w / 2 + 40f, logoCy - 120f, w / 2 - 40f, logoCy + 110f, 9f, ACCENT, 200)
+        textBlock(c, rnd, "VS", w / 2, logoCy + 4f + 42f, fBrush, 120f, Color.WHITE, Paint.Align.CENTER, specks = 260, shadow = true)
+
+        // ── Unterer Block, von unten nach oben ───────────────────────
+        val tagBase = h - 40f
+        val boxBottom = h - 102f
+        val labels = ScorerFormat.labels(
+            m.sortedGoals.filter { it.forAsk && it.scorer.isNotBlank() }.map { it.scorer to it.minute }, input.showMinutes,
+        )
+        val linePaint = textPaint(fCond, 46f, Color.WHITE)
+        val sep = "  •  "
+        fun lw(line: List<String>) = line.sumOf { linePaint.measureText(it).toDouble() }.toFloat() +
+            linePaint.measureText(sep) * (line.size - 1)
+        var lines = listOf(labels)
+        while (labels.isNotEmpty() && lw(labels) > w - 160f && linePaint.textSize > 34f) linePaint.textSize -= 2f
+        if (labels.isNotEmpty() && lw(labels) > w - 160f) {
+            val mid = (labels.size + 1) / 2
+            lines = listOf(labels.take(mid), labels.drop(mid))
+            while (lines.maxOf { lw(it) } > w - 160f && linePaint.textSize > 24f) linePaint.textSize -= 2f
+        }
+        val hasBox = labels.isNotEmpty()
+        val boxH = if (hasBox) 58f + 54f * lines.size + 12f else 0f
+        val boxTop = boxBottom - boxH
+        val namesBase = (if (hasBox) boxTop else boxBottom) - 34f
+        val digitsBase = namesBase - 62f
+        val scorePaint = textPaint(fHeavy, 290f, Color.WHITE)
+        val bounds = Rect(); scorePaint.getTextBounds("14", 0, 2, bounds)
+        val digitsTop = digitsBase + bounds.top
+        val titleBase = digitsTop - 34f
+
+        // Titel (schräg, Pinselschrift) + Unterstrich
+        val (p1, p2) = titleParts(input)
+        val titlePaint = textPaint(fBrush, 150f, Color.WHITE)
+        while (titlePaint.measureText(p1 + p2) > w - 70f && titlePaint.textSize > 60f) titlePaint.textSize -= 4f
+        val tx = (w - titlePaint.measureText(p1 + p2)) / 2f
+        c.save()
+        c.rotate(-4f, w / 2f, titleBase)
+        textBlock(c, rnd, p1, tx, titleBase, fBrush, titlePaint.textSize, Color.WHITE, Paint.Align.LEFT, specks = 3000, shadow = true)
+        textBlock(c, rnd, p2, tx + titlePaint.measureText(p1), titleBase, fBrush, titlePaint.textSize,
+            if (outcome == Outcome.LOSS) GREY else ACCENT, Paint.Align.LEFT, specks = 2000, shadow = true)
+        brushStroke(c, rnd, 60f, titleBase + 42f, w - 60f, titleBase + 18f, 16f, ACCENT, 230)
+        c.restore()
 
         // Ergebnis
-        val scorePaint = textPaint(bebas, 268f, Color.WHITE)
-        val hg = m.homeGoals?.toString() ?: "-"
-        val ag = m.awayGoals?.toString() ?: "-"
-        val colon = ":"
-        val gap = 18f
-        val wh = scorePaint.measureText(hg)
-        val wc = scorePaint.measureText(colon)
-        val wa = scorePaint.measureText(ag)
-        val total = wh + gap + wc + gap + wa
-        var x = w / 2f - total / 2f
-        val baseline = y0 + 252f
-        scorePaint.color = if (askHome) LIME else GREY_GREEN
-        c.drawText(hg, x, baseline, scorePaint); x += wh + gap
-        scorePaint.color = GREY_GREEN
-        c.drawText(colon, x, baseline, scorePaint); x += wc + gap
-        scorePaint.color = if (askHome) GREY_GREEN else LIME
-        c.drawText(ag, x, baseline, scorePaint)
-
-        // Teamnamen
-        drawSpacedCentered(c, m.homeTeam.uppercase(), leftCenterX, y0 + 302f, barlowBold, 34f, Color.WHITE, 0.08f, maxWidth = 330f)
-        drawSpacedCentered(c, m.awayTeam.uppercase(), rightCenterX, y0 + 302f, barlowBold, 34f, Color.WHITE, 0.08f, maxWidth = 330f)
-
-        // Trennlinie
-        p.color = DIVIDER
-        c.drawRect(56f, y0 + 347f, w - 56f, y0 + 349f, p)
-
-        // Torschützen
-        val askGoals = m.sortedGoals.filter { it.forAsk && it.scorer.isNotBlank() }
-        if (askGoals.isNotEmpty()) {
-            drawSpacedCentered(c, "TORE ${input.clubDisplayName.uppercase()}", w / 2f, y0 + 408f, barlowBold, 27f, LIME, 0.35f)
-            drawScorers(c, buildScorerSegments(askGoals.map { it.scorer to it.minute }, input.showMinutes), w / 2f, y0 + 480f, maxWidth = w - 100f)
-        } else if (m.askGoals(kw) == 0) {
-            drawSpacedCentered(c, "KOPF HOCH – WEITER GEHT'S!", w / 2f, y0 + 470f, bebas, 64f, Color.WHITE, 0.02f)
+        val cxHome = w / 2f - 215f
+        val cxAway = w / 2f + 215f
+        textBlock(c, rnd, m.homeGoals?.toString() ?: "-", cxHome, digitsBase, fHeavy, 290f,
+            if (askHome) ACCENT else Color.WHITE, Paint.Align.CENTER, specks = 2600, shadow = true)
+        textBlock(c, rnd, m.awayGoals?.toString() ?: "-", cxAway, digitsBase, fHeavy, 290f,
+            if (askHome) Color.WHITE else ACCENT, Paint.Align.CENTER, specks = 2600, shadow = true)
+        textBlock(c, rnd, ":", w / 2f, digitsBase - 40f, fHeavy, 170f, Color.WHITE, Paint.Align.CENTER, specks = 200, shadow = true)
+        for ((cx, label) in listOf(cxHome to input.homeLabel.uppercase(), cxAway to input.awayLabel.uppercase())) {
+            val np = textPaint(fHeavy, 40f, Color.WHITE).apply {
+                textAlign = Paint.Align.CENTER; setShadowLayer(6f, 0f, 4f, withAlpha(Color.BLACK, 170))
+            }
+            while (np.measureText(label) > 400f && np.textSize > 24f) np.textSize -= 2f
+            c.drawText(label, cx, namesBase, np)
         }
 
-        // ── Fußzeile ─────────────────────────────────────────────────
-        p.color = DARKER_GREEN
-        c.drawRect(0f, h - 84f, w, h, p)
-        val footerLeft = "${m.homeTeam} – ${m.awayTeam}".uppercase()
-        drawSpaced(c, footerLeft, 45f, h - 31f, barlowSemi, 26f, LIGHT_GREY, 0.2f, maxWidth = 620f)
-        drawSpacedRight(c, input.hashtag.uppercase(), w - 45f, h - 31f, barlowBold, 27f, Color.WHITE, 0.2f)
+        // Torschützen-Box
+        if (hasBox) {
+            val r = RectF(52f, boxTop, w - 52f, boxBottom)
+            p.style = Paint.Style.FILL; p.color = withAlpha(Color.rgb(4, 16, 9), 200)
+            c.drawRoundRect(r, 20f, 20f, p)
+            p.style = Paint.Style.STROKE; p.strokeWidth = 3f; p.color = ACCENT
+            c.drawRoundRect(r, 20f, 20f, p); p.style = Paint.Style.FILL
+            val tp = textPaint(fCond, 34f, ACCENT).apply { textAlign = Paint.Align.CENTER }
+            c.drawText("TORE FÜR ${input.ownShort.uppercase()}", w / 2f, boxTop + 46f, tp)
+            var y = boxTop + 46f + 54f
+            val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ACCENT }
+            for (line in lines) {
+                var x = w / 2f - lw(line) / 2f
+                line.forEachIndexed { i, s ->
+                    c.drawText(s, x, y, linePaint); x += linePaint.measureText(s)
+                    if (i < line.lastIndex) {
+                        val g = linePaint.measureText(sep)
+                        c.drawCircle(x + g / 2f, y - linePaint.textSize * 0.37f, linePaint.textSize * 0.13f, dot); x += g
+                    }
+                }
+                y += 54f
+            }
+        }
 
+        // Hashtag
+        if (input.hashtag.isNotBlank()) {
+            val hp = textPaint(fScript, 62f, Color.WHITE).apply {
+                textAlign = Paint.Align.CENTER; setShadowLayer(6f, 0f, 4f, withAlpha(Color.BLACK, 170))
+            }
+            while (hp.measureText(input.hashtag) > w - 120f && hp.textSize > 30f) hp.textSize -= 2f
+            val tw = hp.measureText(input.hashtag)
+            brushStroke(c, rnd, w / 2 - tw / 2 + 20f, tagBase + 14f, w / 2 + tw / 2 + 10f, tagBase + 6f, 7f, ACCENT, 220)
+            c.drawText(input.hashtag, w / 2f, tagBase, hp)
+        }
         return bmp
     }
 
-    // ── Hilfsfunktionen ──────────────────────────────────────────────
+    // ── Bausteine ───────────────────────────────────────────────────
 
     private fun textPaint(tf: Typeface, size: Float, color: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = tf; textSize = size; this.color = color
     }
 
-    private fun drawCenterCrop(c: Canvas, src: Bitmap, dst: RectF, focusY: Float) {
-        val scale = maxOf(dst.width() / src.width, dst.height() / src.height)
-        val cropW = dst.width() / scale
-        val cropH = dst.height() / scale
-        val left = (src.width - cropW) / 2f
-        val top = ((src.height - cropH) * focusY).coerceIn(0f, src.height - cropH)
-        val srcRect = Rect(left.toInt(), top.toInt(), (left + cropW).toInt(), (top + cropH).toInt())
-        c.drawBitmap(src, srcRect, dst, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+    private fun Random.nextFloat(from: Float, until: Float) = from + nextFloat() * (until - from)
+
+    private fun glow(c: Canvas, cx: Float, cy: Float, radius: Float, color: Int, alpha: Int) {
+        val g = Paint(Paint.ANTI_ALIAS_FLAG)
+        g.shader = RadialGradient(cx, cy, radius,
+            intArrayOf(withAlpha(color, alpha), withAlpha(color, alpha * 56 / 100), withAlpha(color, alpha / 4), withAlpha(color, 0)),
+            floatArrayOf(0f, 0.25f, 0.5f, 1f), Shader.TileMode.CLAMP)
+        c.drawCircle(cx, cy, radius, g)
     }
 
-    /** Weißes Abzeichen wie in der Vorlage: Kreis + Quadrat, Logo mittig. */
-    private fun drawLogoBadge(c: Canvas, cx: Float, cy: Float, logo: Bitmap?, teamName: String) {
-        val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        p.color = Color.WHITE
-        c.drawCircle(cx, cy, 100f, p)
-        c.drawRect(cx - 84f, cy - 84f, cx + 84f, cy + 84f, p)
-        if (logo != null) {
-            val box = 150f
-            val s = minOf(box / logo.width, box / logo.height)
-            val lw = logo.width * s; val lh = logo.height * s
-            c.drawBitmap(logo, null, RectF(cx - lw / 2, cy - lh / 2, cx + lw / 2, cy + lh / 2), p)
-        } else {
-            val initials = teamName.split(Regex("""\s+""")).filter { it.isNotEmpty() }
-                .let { parts -> if (parts.size >= 2) parts.take(2) else parts }
-                .joinToString("") { it.first().uppercase() }.ifBlank { "?" }
-            val tp = textPaint(bebas, 96f, DARK_GREEN).apply { textAlign = Paint.Align.CENTER }
-            c.drawText(initials, cx, cy + 34f, tp)
+    /** Unregelmäßiger, an den Enden spitz zulaufender Pinselstrich. */
+    private fun brushStroke(c: Canvas, rnd: Random, x0: Float, y0: Float, x1: Float, y1: Float, width: Float, color: Int, alpha: Int) {
+        val n = 14
+        val ang = atan2(y1 - y0, x1 - x0)
+        val nx = -sin(ang); val ny = cos(ang)
+        val top = ArrayList<Pair<Float, Float>>(); val bot = ArrayList<Pair<Float, Float>>()
+        for (i in 0..n) {
+            val t = i / n.toFloat()
+            val x = x0 + (x1 - x0) * t; val y = y0 + (y1 - y0) * t
+            val taper = sin(PI * min(1.0, t * 1.15)).pow(0.6).toFloat()
+            val wv = width * taper * (0.7f + 0.3f * rnd.nextFloat())
+            top += (x + nx * wv / 2) to (y + ny * wv / 2)
+            bot += (x - nx * wv / 2 + rnd.nextFloat(-2f, 2f)) to (y - ny * wv / 2)
         }
+        val path = Path()
+        (top + bot.reversed()).forEachIndexed { i, (px, py) -> if (i == 0) path.moveTo(px, py) else path.lineTo(px, py) }
+        path.close()
+        c.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = withAlpha(color, alpha) })
     }
 
-    private fun spacedWidth(text: String, paint: Paint, spacingPx: Float): Float =
-        paint.measureText(text) + spacingPx * (text.length - 1).coerceAtLeast(0)
-
-    private fun drawSpaced(
-        c: Canvas, text: String, x: Float, y: Float, tf: Typeface, size: Float, color: Int,
-        spacing: Float, maxWidth: Float = Float.MAX_VALUE,
+    /**
+     * Text mit Schatten und "Grunge"-Struktur: in eigener Ebene zeichnen,
+     * dann feine Sprenkel/Kratzer herauslöschen (DST_OUT).
+     */
+    private fun textBlock(
+        c: Canvas, rnd: Random, text: String, x: Float, baseline: Float, tf: Typeface, size: Float, color: Int,
+        align: Paint.Align, specks: Int, shadow: Boolean,
     ) {
-        val p = textPaint(tf, size, color)
-        fitSpaced(text, p, spacing, maxWidth)
-        p.letterSpacing = spacing
-        c.drawText(text, x, y, p)
-    }
+        val tp = textPaint(tf, size, color).apply { textAlign = align }
+        val b = Rect(); tp.getTextBounds(text, 0, text.length, b)
+        val width = tp.measureText(text)
+        val left = when (align) { Paint.Align.CENTER -> x - width / 2; Paint.Align.RIGHT -> x - width; else -> x }
+        val area = RectF(left - 30f, baseline + b.top - 30f, left + width + 30f, baseline + b.bottom + 40f)
 
-    private fun drawSpacedCentered(
-        c: Canvas, text: String, cx: Float, y: Float, tf: Typeface, size: Float, color: Int,
-        spacing: Float, maxWidth: Float = Float.MAX_VALUE,
-    ) {
-        val p = textPaint(tf, size, color)
-        fitSpaced(text, p, spacing, maxWidth)
-        p.letterSpacing = spacing
-        // letterSpacing fügt auch nach dem letzten Zeichen Abstand hinzu → korrigieren
-        val width = p.measureText(text) - spacing * p.textSize
-        c.drawText(text, cx - width / 2f, y, p)
-    }
-
-    private fun drawSpacedRight(
-        c: Canvas, text: String, right: Float, y: Float, tf: Typeface, size: Float, color: Int, spacing: Float,
-    ) {
-        val p = textPaint(tf, size, color)
-        p.letterSpacing = spacing
-        val width = p.measureText(text) - spacing * p.textSize
-        c.drawText(text, right - width, y, p)
-    }
-
-    private fun fitSpaced(text: String, p: Paint, spacing: Float, maxWidth: Float) {
-        while (spacedWidth(text, p, spacing * p.textSize) > maxWidth && p.textSize > 14f) {
-            p.textSize -= 1f
-        }
-    }
-
-    fun buildScorerSegments(goals: List<Pair<String, String>>, showMinutes: Boolean) =
-        ScorerFormat.segments(goals, showMinutes)
-
-    private fun drawScorers(c: Canvas, segs: List<ScorerFormat.ScorerSegment>, cx: Float, baseline: Float, maxWidth: Float) {
-        if (segs.isEmpty()) return
-        var size = 74f
-        val namePaint = textPaint(bebas, size, Color.WHITE)
-        val extraPaint = textPaint(bebas, size, LIME)
-        val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = GREY_GREEN }
-
-        fun lineWidth(line: List<ScorerFormat.ScorerSegment>): Float {
-            val gapDot = size * 0.9f
-            return line.sumOf { s ->
-                (namePaint.measureText(s.name) + if (s.extra.isNotEmpty()) size * 0.12f + extraPaint.measureText(s.extra) else 0f).toDouble()
-            }.toFloat() + gapDot * (line.size - 1)
-        }
-        fun setSize(sz: Float) { size = sz; namePaint.textSize = sz; extraPaint.textSize = sz }
-
-        // Eine Zeile, wenn möglich; sonst auf zwei Zeilen verteilen
-        var lines = listOf(segs)
-        while (lineWidth(segs) > maxWidth && size > 60f) setSize(size - 2f)
-        if (lineWidth(segs) > maxWidth) {
-            val mid = (segs.size + 1) / 2
-            lines = listOf(segs.take(mid), segs.drop(mid))
-            setSize(70f)
-            while (lines.maxOf { lineWidth(it) } > maxWidth && size > 36f) setSize(size - 2f)
-        }
-
-        val lineHeight = size * 0.95f
-        var y = baseline - (lines.size - 1) * lineHeight / 2f
-        for (line in lines) {
-            var x = cx - lineWidth(line) / 2f
-            line.forEachIndexed { i, s ->
-                c.drawText(s.name, x, y, namePaint)
-                x += namePaint.measureText(s.name)
-                if (s.extra.isNotEmpty()) {
-                    x += size * 0.12f
-                    c.drawText(s.extra, x, y, extraPaint)
-                    x += extraPaint.measureText(s.extra)
-                }
-                if (i < line.lastIndex) {
-                    val gapDot = size * 0.9f
-                    c.drawCircle(x + gapDot / 2f, y - size * 0.33f, size * 0.07f, dotPaint)
-                    x += gapDot
-                }
+        if (shadow) {
+            val sp = textPaint(tf, size, withAlpha(Color.BLACK, 190)).apply {
+                textAlign = align; maskFilter = BlurMaskFilter(12f, BlurMaskFilter.Blur.NORMAL)
             }
-            y += lineHeight
+            c.drawText(text, x, baseline + 8f, sp)
+        }
+        val layer = c.saveLayer(area, null)
+        c.drawText(text, x, baseline, tp)
+        if (specks > 0) {
+            val er = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT) }
+            val radii = floatArrayOf(0.6f, 0.8f, 1f, 1f, 1.3f, 1.8f)
+            // specks = Anzahl bezogen auf eine ganze 1080×1350-Fläche → auf die Textfläche umrechnen
+            val n = (specks * (area.width() * area.height()) / (1080f * 1350f)).toInt().coerceAtLeast(1)
+            repeat(n) {
+                er.alpha = rnd.nextInt(150, 256)
+                c.drawCircle(rnd.nextFloat(area.left, area.right), rnd.nextFloat(area.top, area.bottom), radii[rnd.nextInt(radii.size)], er)
+            }
+            er.strokeWidth = 1f; er.style = Paint.Style.STROKE
+            repeat(n / 12) {
+                val sx = rnd.nextFloat(area.left, area.right); val sy = rnd.nextFloat(area.top, area.bottom)
+                val l = rnd.nextFloat(6f, 28f); val a = rnd.nextFloat(-0.6f, 0.6f)
+                er.alpha = 200
+                c.drawLine(sx, sy, sx + l * cos(a), sy + l * sin(a), er)
+            }
+        }
+        c.restoreToCount(layer)
+    }
+
+    private fun drawCenterCrop(c: Canvas, src: Bitmap, dst: RectF, focusY: Float) {
+        val scale = max(dst.width() / src.width, dst.height() / src.height)
+        val cropW = dst.width() / scale; val cropH = dst.height() / scale
+        val left = (src.width - cropW) / 2f
+        val top = ((src.height - cropH) * focusY).coerceIn(0f, max(0f, src.height - cropH))
+        c.drawBitmap(src, Rect(left.toInt(), top.toInt(), (left + cropW).toInt(), (top + cropH).toInt()), dst,
+            Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+    }
+
+    /** Logo mit weichem Schatten; ohne Logo ein weißer Kreis mit Initialen. */
+    private fun drawLogo(c: Canvas, logo: Bitmap?, cx: Float, cy: Float, box: Float, teamName: String) {
+        if (logo != null) {
+            val s = min(box / logo.width, box / logo.height)
+            val lw = logo.width * s; val lh = logo.height * s
+            val dst = RectF(cx - lw / 2, cy - lh / 2, cx + lw / 2, cy + lh / 2)
+            val blur = Paint().apply { maskFilter = BlurMaskFilter(14f / s, BlurMaskFilter.Blur.NORMAL) }
+            val offset = IntArray(2)
+            val alpha = logo.extractAlpha(blur, offset)
+            val sh = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply { color = withAlpha(Color.BLACK, 190) }
+            c.drawBitmap(alpha, null,
+                RectF(dst.left + offset[0] * s, dst.top + offset[1] * s + 10f,
+                    dst.left + (offset[0] + alpha.width) * s, dst.top + (offset[1] + alpha.height) * s + 10f), sh)
+            alpha.recycle()
+            c.drawBitmap(logo, null, dst, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+        } else {
+            val r = box * 0.46f
+            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; setShadowLayer(14f, 0f, 10f, withAlpha(Color.BLACK, 190)) }
+            c.drawCircle(cx, cy, r, p)
+            p.clearShadowLayer(); p.style = Paint.Style.STROKE; p.strokeWidth = 8f; p.color = ACCENT
+            c.drawCircle(cx, cy, r - 4f, p)
+            val initials = teamName.split(Regex("""\s+""")).filter { it.isNotEmpty() }.take(2)
+                .joinToString("") { it.first().uppercase() }.ifBlank { "?" }
+            val tp = textPaint(fHeavy, box * 0.3f, BG).apply { textAlign = Paint.Align.CENTER }
+            val b = Rect(); tp.getTextBounds(initials, 0, initials.length, b)
+            c.drawText(initials, cx, cy - b.exactCenterY(), tp)
         }
     }
 }

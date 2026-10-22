@@ -16,18 +16,12 @@ class LigaportalAndFlyerTest {
     private val kw = "Mannersdorf"
 
     @Test fun flyerMinutesCommaSeparated() {
-        val segs = ScorerFormat.segments(
-            listOf("Marcel Srok" to "8'", "Sejdini" to "34'", "Marcel Srok" to "85'", "Özel" to "90+2'"), true,
+        val labels = ScorerFormat.labels(
+            listOf("Marcel Srok" to "8'", "Sejdini" to "22'", "Marcel Srok" to "88'", "Özel" to "90+5'"), true,
         )
-        assertEquals(
-            listOf(
-                ScorerFormat.ScorerSegment("SROK", "8., 85."),
-                ScorerFormat.ScorerSegment("SEJDINI", "34."),
-                ScorerFormat.ScorerSegment("ÖZEL", "90+2."),
-            ),
-            segs,
-        )
-        assertEquals("2×", ScorerFormat.segments(listOf("Srok" to "8'", "Srok" to "85'"), false)[0].extra)
+        assertEquals(listOf("Srok (8., 88.)", "Sejdini (22.)", "Özel (90+5.)"), labels)
+        assertEquals(listOf("Srok 2×"), ScorerFormat.labels(listOf("Srok" to "8'", "Srok" to "85'"), false))
+        assertEquals(listOf("Srok"), ScorerFormat.labels(listOf("Srok" to "", ), true))
     }
 
     private fun snap(rows: List<PageRow> = emptyList(), links: List<PageLink> = emptyList(), text: String = "") =

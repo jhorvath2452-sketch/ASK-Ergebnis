@@ -121,6 +121,35 @@ object FlyerShare {
         }
     }
 
+    /**
+     * Macht einen weißen/hellen Hintergrund um ein Logo transparent (Flutfüllung von den Rändern aus).
+     * Weiße Flächen IM Logo bleiben erhalten, solange sie nicht mit dem Rand verbunden sind.
+     * Hat das Bild keinen hellen Rand (z. B. schon transparent), bleibt es unverändert.
+     */
+    fun removeWhiteBackground(src: Bitmap, threshold: Int = 228): Bitmap {
+        val w = src.width; val h = src.height
+        val px = IntArray(w * h)
+        val bmp = if (src.config == Bitmap.Config.ARGB_8888 && src.isMutable) src else src.copy(Bitmap.Config.ARGB_8888, true)
+        bmp.getPixels(px, 0, w, 0, 0, w, h)
+        fun light(c: Int) = (c ushr 24) > 200 &&
+            minOf((c shr 16) and 0xFF, (c shr 8) and 0xFF, c and 0xFF) >= threshold
+        val corners = intArrayOf(0, w - 1, (h - 1) * w, h * w - 1)
+        if (corners.count { light(px[it]) } < 2) return bmp
+        val seen = BooleanArray(w * h)
+        val queue = IntArray(w * h); var head = 0; var tail = 0
+        fun push(i: Int) { if (!seen[i] && light(px[i])) { seen[i] = true; queue[tail++] = i } }
+        for (x in 0 until w) { push(x); push((h - 1) * w + x) }
+        for (y in 0 until h) { push(y * w); push(y * w + w - 1) }
+        while (head < tail) {
+            val i = queue[head++]; val x = i % w; val y = i / w
+            px[i] = 0
+            if (x > 0) push(i - 1); if (x < w - 1) push(i + 1)
+            if (y > 0) push(i - w); if (y < h - 1) push(i + w)
+        }
+        bmp.setPixels(px, 0, w, 0, 0, w, h)
+        return bmp
+    }
+
     /** Lädt ein Logo aus dem Internet (z. B. Wappen aus dem ÖFB-Widget). */
     suspend fun downloadImage(url: String): Bitmap? = withContext(Dispatchers.IO) {
         try {

@@ -23,7 +23,7 @@ data class AppSettings(
     val clubDisplayName: String = "ASK Mannersdorf",
     /** Kurzname des eigenen Vereins in der SMS. */
     val smsShortName: String = "ASK",
-    val hashtag: String = "#ASKMANNERSDORF",
+    val hashtag: String = "#manaschdooaaf",
 )
 
 class SettingsStore(context: Context) {
@@ -45,7 +45,7 @@ class SettingsStore(context: Context) {
             clubKeyword = prefs.getString("clubKeyword", d.clubKeyword)!!,
             clubDisplayName = prefs.getString("clubDisplayName", d.clubDisplayName)!!,
             smsShortName = prefs.getString("smsShortName", d.smsShortName)!!,
-            hashtag = prefs.getString("hashtag", d.hashtag)!!,
+            hashtag = prefs.getString("hashtag", d.hashtag)!!.let { if (it == "#ASKMANNERSDORF") d.hashtag else it },
         )
     }
 

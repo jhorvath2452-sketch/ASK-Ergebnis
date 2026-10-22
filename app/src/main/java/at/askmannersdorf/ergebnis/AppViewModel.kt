@@ -151,7 +151,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onU23Changed(t: String) { u23Result = t; refreshSms() }
 
-    fun onOpponentShortChanged(t: String) { opponentShort = t; refreshSms() }
+    fun onOpponentShortChanged(t: String) { opponentShort = t; refreshSms(); regenerateFlyer() }
 
     /** Text nach Vereinsmuster neu erzeugen (überschreibt Handänderungen). */
     fun regenerateSms() { smsEdited = false; refreshSms() }
@@ -223,9 +223,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setOpponentLogo(uri: Uri) = viewModelScope.launch {
-        opponentLogo = FlyerShare.loadImage(getApplication(), uri, maxSide = 600)
+        opponentLogo = FlyerShare.loadImage(getApplication(), uri, maxSide = 800)?.let { FlyerShare.removeWhiteBackground(it) }
         regenerateFlyer()
     }
+
+    private fun ownShort() = SmsFormatter.shortTeamName(settings.clubDisplayName)
+    private fun oppShortLabel() = opponentShort.ifBlank { SmsFormatter.shortTeamName(match.opponent(settings.clubKeyword)) }
 
     fun regenerateFlyer() {
         if (!flyerEnabled || !match.isComplete) { flyer = null; return }
@@ -234,6 +237,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             clubKeyword = settings.clubKeyword,
             clubDisplayName = settings.clubDisplayName,
             hashtag = settings.hashtag,
+            homeLabel = if (match.isAskHome(settings.clubKeyword)) ownShort() else oppShortLabel(),
+            awayLabel = if (match.isAskHome(settings.clubKeyword)) oppShortLabel() else ownShort(),
+            ownShort = ownShort(),
             photo = photo,
             opponentLogo = opponentLogo,
             showMinutes = showMinutes,
