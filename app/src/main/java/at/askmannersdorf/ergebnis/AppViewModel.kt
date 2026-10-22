@@ -13,7 +13,7 @@ import at.askmannersdorf.ergebnis.data.EsendexClient
 import at.askmannersdorf.ergebnis.data.MatchRepository
 import at.askmannersdorf.ergebnis.data.SettingsStore
 import at.askmannersdorf.ergebnis.data.SmsFormatter
-import at.askmannersdorf.ergebnis.data.SmsGroup
+import at.askmannersdorf.ergebnis.data.PhoneNumbers
 import at.askmannersdorf.ergebnis.flyer.FlyerFormat
 import at.askmannersdorf.ergebnis.flyer.FlyerInput
 import at.askmannersdorf.ergebnis.flyer.FlyerRenderer
@@ -44,8 +44,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var smsEdited by mutableStateOf(false); private set
     var u23Result by mutableStateOf(""); private set
     var opponentShort by mutableStateOf(""); private set
-    var groups by mutableStateOf<List<SmsGroup>>(emptyList()); private set
-    var selectedGroupId by mutableStateOf(settings.lastGroupId)
+    /** Empfänger-Nummern (aus den Einstellungen, eine pro Zeile) */
+    val recipients: List<String> get() = PhoneNumbers.parse(settings.smsRecipients)
     var smsBusy by mutableStateOf(false); private set
     var smsStatus by mutableStateOf<String?>(null); private set
     var testNumber by mutableStateOf("")
@@ -92,7 +92,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun saveSettings(s: AppSettings) {
         store.save(s); settings = store.load()
-        groups = emptyList()
         refreshSms()
         regenerateFlyer()
     }
@@ -168,33 +167,34 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun loadGroups() {
-        smsBusy = true; smsStatus = "Lade Gruppen …"
-        viewModelScope.launch {
-            try {
-                val client = EsendexClient(settings)
-                groups = client.groups()
-                val credits = runCatching { client.credits() }.getOrNull()
-                if (groups.none { it.id == selectedGroupId }) selectedGroupId = groups.firstOrNull()?.id ?: ""
-                smsStatus = "${groups.size} Gruppen geladen" + (credits?.let { ". Guthaben: $it" } ?: "")
-            } catch (e: Exception) {
-                smsStatus = e.message ?: "Fehler beim Laden der Gruppen"
-            } finally {
-                smsBusy = false
-            }
+    /** Empfängerliste speichern (Text oder CSV-Import); gibt die Anzahl erkannter Nummern zurück. */
+    fun saveRecipients(text: String): Int {
+        val nums = PhoneNumbers.parse(text)
+        store.save(settings.copy(smsRecipients = nums.joinToString("\n")))
+        settings = store.load()
+        smsStatus = "${nums.size} Empfänger gespeichert."
+        return nums.size
+    }
+
+    fun importRecipients(uri: Uri) = viewModelScope.launch {
+        val text = withContext(Dispatchers.IO) {
+            runCatching {
+                getApplication<Application>().contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+            }.getOrNull()
         }
+        if (text == null) { smsStatus = "Datei konnte nicht gelesen werden."; return@launch }
+        val merged = (recipients + PhoneNumbers.parse(text)).distinct()
+        saveRecipients(merged.joinToString("\n"))
     }
 
     fun sendSms() {
-        val group = selectedGroupId
-        if (smsText.isBlank() || group.isBlank()) return
-        smsBusy = true; smsStatus = "Sende …"
+        val nums = recipients
+        if (smsText.isBlank() || nums.isEmpty()) return
+        smsBusy = true; smsStatus = "Sende an ${nums.size} Empfänger …"
         viewModelScope.launch {
             try {
-                val r = EsendexClient(settings).sendToGroups(smsText, listOf(group))
-                smsStatus = r.message
-                if (r.ok) store.save(settings.copy(lastGroupId = group))
-            } catch (e: Exception) {
+                smsStatus = EsendexClient(settings).send(smsText, nums).message
+            } catch (e: Throwable) {
                 smsStatus = e.message ?: "Fehler beim Versand"
             } finally {
                 smsBusy = false
@@ -207,8 +207,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         smsBusy = true; smsStatus = "Sende Test-SMS …"
         viewModelScope.launch {
             try {
-                smsStatus = EsendexClient(settings).sendToNumbers(smsText, listOf(testNumber)).message
-            } catch (e: Exception) {
+                smsStatus = EsendexClient(settings).send(smsText, listOf(testNumber), "Ergebnis-SMS Test").message
+            } catch (e: Throwable) {
                 smsStatus = e.message ?: "Fehler beim Versand"
             } finally {
                 smsBusy = false

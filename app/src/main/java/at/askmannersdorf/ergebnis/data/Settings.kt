@@ -4,13 +4,15 @@ import android.content.Context
 
 /** Einstellungen, lokal am Gerät gespeichert. */
 data class AppSettings(
-    val esendexBaseUrl: String = "https://app.esendex.de/API/v1.0/REST/",
-    val esendexUser: String = "",
-    val esendexPassword: String = "",
-    val smsSender: String = "ASK",
-    /** N = hohe Qualität (mit Absender), L = mittel, LL = niedrig */
-    val smsQuality: String = "N",
-    val lastGroupId: String = "",
+    /** Esendex Messaging API v2 (Deutschland) */
+    val esendexApiUrl: String = "https://api.esendex.de/v2/messages",
+    val esendexApiKey: String = "",
+    /** Kontonummer, z. B. EXDE0000000 */
+    val esendexAccount: String = "",
+    /** Absender (optional; sonst Standard-Absender aus dem Esendex-Portal) */
+    val smsSender: String = "",
+    /** Empfänger-Nummern, eine pro Zeile */
+    val smsRecipients: String = "",
     /** Öffentliche LMO-Ligaseite (Hauptquelle für Ergebnisse). */
     val lmoUrl: String = "https://askmannersdorf.at/LMO_2026/liga.php?id=1",
     val oefbWidgetKey: String = "e19268845f",
@@ -32,12 +34,11 @@ class SettingsStore(context: Context) {
     fun load(): AppSettings {
         val d = AppSettings()
         return AppSettings(
-            esendexBaseUrl = prefs.getString("esendexBaseUrl", d.esendexBaseUrl)!!,
-            esendexUser = prefs.getString("esendexUser", d.esendexUser)!!,
-            esendexPassword = prefs.getString("esendexPassword", d.esendexPassword)!!,
-            smsSender = prefs.getString("smsSender", d.smsSender)!!,
-            smsQuality = prefs.getString("smsQuality", d.smsQuality)!!,
-            lastGroupId = prefs.getString("lastGroupId", d.lastGroupId)!!,
+            esendexApiUrl = prefs.getString("esendexApiUrl", d.esendexApiUrl)!!.ifBlank { d.esendexApiUrl },
+            esendexApiKey = prefs.getString("esendexApiKey", d.esendexApiKey)!!,
+            esendexAccount = prefs.getString("esendexAccount", d.esendexAccount)!!,
+            smsSender = prefs.getString("smsSender2", d.smsSender)!!,
+            smsRecipients = prefs.getString("smsRecipients", d.smsRecipients)!!,
             lmoUrl = prefs.getString("lmoUrl", d.lmoUrl)!!.ifBlank { d.lmoUrl },
             oefbWidgetKey = prefs.getString("oefbWidgetKey", d.oefbWidgetKey)!!,
             oefbEmbedOrigin = prefs.getString("oefbEmbedOrigin", d.oefbEmbedOrigin)!!,
@@ -51,12 +52,11 @@ class SettingsStore(context: Context) {
 
     fun save(s: AppSettings) {
         prefs.edit()
-            .putString("esendexBaseUrl", s.esendexBaseUrl.trim())
-            .putString("esendexUser", s.esendexUser.trim())
-            .putString("esendexPassword", s.esendexPassword)
-            .putString("smsSender", s.smsSender.trim())
-            .putString("smsQuality", s.smsQuality.trim())
-            .putString("lastGroupId", s.lastGroupId)
+            .putString("esendexApiUrl", s.esendexApiUrl.trim())
+            .putString("esendexApiKey", s.esendexApiKey.trim())
+            .putString("esendexAccount", s.esendexAccount.trim().uppercase())
+            .putString("smsSender2", s.smsSender.trim())
+            .putString("smsRecipients", s.smsRecipients)
             .putString("lmoUrl", s.lmoUrl.trim())
             .putString("oefbWidgetKey", s.oefbWidgetKey.trim())
             .putString("oefbEmbedOrigin", s.oefbEmbedOrigin.trim().trimEnd('/'))

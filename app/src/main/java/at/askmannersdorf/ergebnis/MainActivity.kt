@@ -211,9 +211,9 @@ private fun GoalRow(g: Goal, onChange: (Goal) -> Unit, onRemove: () -> Unit) {
 @Composable
 private fun SmsSection(vm: AppViewModel) {
     var confirm by remember { mutableStateOf(false) }
-    var menuOpen by remember { mutableStateOf(false) }
+    var editRecipients by remember { mutableStateOf(false) }
     val (chars, parts) = SmsCounter.count(vm.smsText)
-    val groupName = vm.groups.firstOrNull { it.id == vm.selectedGroupId }?.name
+    val recipients = vm.recipients
 
     Section("2 · Ergebnis-SMS") {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -238,28 +238,18 @@ private fun SmsSection(vm: AppViewModel) {
             TextButton(onClick = vm::regenerateSms, enabled = vm.match.isComplete) { Text("Text neu erzeugen") }
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Column(Modifier.weight(1f)) {
-                OutlinedButton(onClick = { if (vm.groups.isEmpty()) vm.loadGroups() else menuOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(groupName?.let { "Gruppe: $it" } ?: if (vm.groups.isEmpty()) "Esendex-Gruppen laden" else "Gruppe wählen")
-                }
-                DropdownMenu(menuOpen, { menuOpen = false }) {
-                    vm.groups.forEach { g ->
-                        DropdownMenuItem(
-                            text = { Text(g.name + (g.count?.let { " ($it)" } ?: "")) },
-                            onClick = { vm.selectedGroupId = g.id; menuOpen = false },
-                        )
-                    }
-                }
-            }
-            if (vm.groups.isNotEmpty()) TextButton(onClick = vm::loadGroups) { Text("Neu laden") }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                if (recipients.isEmpty()) "Noch keine Empfänger hinterlegt" else "Empfänger: ${recipients.size} Nummern",
+                modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold,
+            )
+            TextButton(onClick = { editRecipients = true }) { Text(if (recipients.isEmpty()) "Hinzufügen" else "Bearbeiten") }
         }
-
         Button(
             onClick = { confirm = true },
-            enabled = !vm.smsBusy && vm.smsText.isNotBlank() && vm.selectedGroupId.isNotBlank(),
+            enabled = !vm.smsBusy && vm.smsText.isNotBlank() && recipients.isNotEmpty(),
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("SMS an Gruppe senden") }
+        ) { Text("SMS an alle Empfänger senden") }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
@@ -276,11 +266,42 @@ private fun SmsSection(vm: AppViewModel) {
         AlertDialog(
             onDismissRequest = { confirm = false },
             title = { Text("SMS wirklich senden?") },
-            text = { Text("An Gruppe: ${groupName ?: vm.selectedGroupId}\n\n${vm.smsText}") },
+            text = { Text("An ${recipients.size} Empfänger:\n\n${vm.smsText}") },
             confirmButton = { Button(onClick = { confirm = false; vm.sendSms() }) { Text("Jetzt senden") } },
             dismissButton = { TextButton(onClick = { confirm = false }) { Text("Abbrechen") } },
         )
     }
+    if (editRecipients) RecipientsDialog(vm) { editRecipients = false }
+}
+
+/** Empfängerliste bearbeiten: eintippen/einfügen oder CSV-Export (z. B. Esendex-Gruppe) importieren. */
+@Composable
+private fun RecipientsDialog(vm: AppViewModel, onClose: () -> Unit) {
+    var text by remember { mutableStateOf(vm.recipients.joinToString("\n")) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) { vm.importRecipients(uri); onClose() }
+    }
+    val count = at.askmannersdorf.ergebnis.data.PhoneNumbers.parse(text).size
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Empfänger") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Eine Nummer pro Zeile (z. B. 0664 1234567). Du kannst auch eine Liste einfügen – Namen und Trennzeichen werden ignoriert.", fontSize = 13.sp)
+                OutlinedTextField(
+                    text, { text = it }, modifier = Modifier.fillMaxWidth().height(220.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                )
+                Text("$count gültige Nummern erkannt", fontSize = 13.sp, color = Color.Gray)
+                OutlinedButton(
+                    onClick = { picker.launch(arrayOf("text/*", "text/csv", "text/comma-separated-values", "application/vnd.ms-excel", "application/octet-stream")) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("CSV-Datei importieren (ergänzt die Liste)") }
+            }
+        },
+        confirmButton = { Button(onClick = { vm.saveRecipients(text); onClose() }) { Text("Speichern") } },
+        dismissButton = { TextButton(onClick = onClose) { Text("Abbrechen") } },
+    )
 }
 
 // ── 3. Flyer ────────────────────────────────────────────────────────
@@ -374,11 +395,10 @@ private fun SettingsScreen(initial: AppSettings, onSave: (AppSettings) -> Unit) 
     var s by remember { mutableStateOf(initial) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 6.dp)) {
         Section("Esendex") {
-            Field("Benutzername / E-Mail", s.esendexUser) { s = s.copy(esendexUser = it) }
-            Field("Passwort", s.esendexPassword, password = true) { s = s.copy(esendexPassword = it) }
-            Field("Absender (max. 11 Zeichen)", s.smsSender) { s = s.copy(smsSender = it.take(11)) }
-            Field("Qualität (N = hoch, L = mittel, LL = niedrig)", s.smsQuality) { s = s.copy(smsQuality = it.uppercase().take(2)) }
-            Field("API-Adresse", s.esendexBaseUrl) { s = s.copy(esendexBaseUrl = it) }
+            Field("API-Schlüssel", s.esendexApiKey, password = true) { s = s.copy(esendexApiKey = it) }
+            Field("Kontonummer (z. B. EXDE0000000)", s.esendexAccount) { s = s.copy(esendexAccount = it) }
+            Field("Absender (optional, muss im Portal freigeschaltet sein)", s.smsSender) { s = s.copy(smsSender = it.take(11)) }
+            Field("API-Adresse", s.esendexApiUrl) { s = s.copy(esendexApiUrl = it) }
         }
         Section("Spieldaten") {
             Field("Ligaportal-Spielplan (Hauptquelle)", s.ligaportalUrl) { s = s.copy(ligaportalUrl = it) }
