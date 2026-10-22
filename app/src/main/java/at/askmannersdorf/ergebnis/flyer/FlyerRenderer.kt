@@ -67,8 +67,10 @@ class FlyerRenderer(private val context: Context) {
     }
 
     private fun font(id: Int) = ResourcesCompat.getFont(context, id) ?: Typeface.DEFAULT_BOLD
-    private val fBrush by lazy { font(R.font.knewave) }
-    private val fScript by lazy { font(R.font.kaushan_script) }
+    /** Titel/VS: schmale, kursive Pinselschrift (ähnlich der Vorlage) + Trockenpinsel-Struktur */
+    private val fBrush by lazy { font(R.font.bangers) }
+    /** Hashtag: Albertsthal Typewriter */
+    private val fTag by lazy { font(R.font.albertsthal_typewriter) }
     private val fHeavy by lazy { font(R.font.archivo_black) }
     private val fCond by lazy { font(R.font.barlow_condensed_bold) }
     private val askLogo: Bitmap by lazy { BitmapFactory.decodeResource(context.resources, R.drawable.ask_logo) }
@@ -163,7 +165,7 @@ class FlyerRenderer(private val context: Context) {
         drawLogo(c, homeLogo, 290f, logoCy, box, m.homeTeam)
         drawLogo(c, awayLogo, w - 290f, logoCy, box, m.awayTeam)
         brushStroke(c, rnd, w / 2 + 40f, logoCy - 120f, w / 2 - 40f, logoCy + 110f, 9f, ACCENT, 200)
-        textBlock(c, rnd, "VS", w / 2, logoCy + 4f + 42f, fBrush, 120f, Color.WHITE, Paint.Align.CENTER, specks = 260, shadow = true)
+        textBlock(c, rnd, "VS", w / 2, logoCy + 4f + 46f, fBrush, 140f, Color.WHITE, Paint.Align.CENTER, specks = 0, shadow = true, dry = 60)
 
         // ── Unterer Block, von unten nach oben ───────────────────────
         val tagBase = h - 40f
@@ -194,14 +196,15 @@ class FlyerRenderer(private val context: Context) {
 
         // Titel (schräg, Pinselschrift) + Unterstrich
         val (p1, p2) = titleParts(input)
-        val titlePaint = textPaint(fBrush, 150f, Color.WHITE)
+        val titlePaint = textPaint(fBrush, 175f, Color.WHITE)
         while (titlePaint.measureText(p1 + p2) > w - 70f && titlePaint.textSize > 60f) titlePaint.textSize -= 4f
         val tx = (w - titlePaint.measureText(p1 + p2)) / 2f
         c.save()
         c.rotate(-4f, w / 2f, titleBase)
-        textBlock(c, rnd, p1, tx, titleBase, fBrush, titlePaint.textSize, Color.WHITE, Paint.Align.LEFT, specks = 3000, shadow = true)
+        textBlock(c, rnd, p1, tx, titleBase, fBrush, titlePaint.textSize, Color.WHITE, Paint.Align.LEFT,
+            specks = 0, shadow = true, dry = 170, bold = 4f)
         textBlock(c, rnd, p2, tx + titlePaint.measureText(p1), titleBase, fBrush, titlePaint.textSize,
-            if (outcome == Outcome.LOSS) GREY else ACCENT, Paint.Align.LEFT, specks = 2000, shadow = true)
+            if (outcome == Outcome.LOSS) GREY else ACCENT, Paint.Align.LEFT, specks = 0, shadow = true, dry = 170, bold = 4f)
         brushStroke(c, rnd, 60f, titleBase + 42f, w - 60f, titleBase + 18f, 16f, ACCENT, 230)
         c.restore()
 
@@ -247,7 +250,7 @@ class FlyerRenderer(private val context: Context) {
 
         // Hashtag
         if (input.hashtag.isNotBlank()) {
-            val hp = textPaint(fScript, 62f, Color.WHITE).apply {
+            val hp = textPaint(fTag, 64f, Color.WHITE).apply {
                 textAlign = Paint.Align.CENTER; setShadowLayer(6f, 0f, 4f, withAlpha(Color.BLACK, 170))
             }
             while (hp.measureText(input.hashtag) > w - 120f && hp.textSize > 30f) hp.textSize -= 2f
@@ -300,9 +303,12 @@ class FlyerRenderer(private val context: Context) {
      */
     private fun textBlock(
         c: Canvas, rnd: Random, text: String, x: Float, baseline: Float, tf: Typeface, size: Float, color: Int,
-        align: Paint.Align, specks: Int, shadow: Boolean,
+        align: Paint.Align, specks: Int, shadow: Boolean, dry: Int = 0, bold: Float = 0f,
     ) {
-        val tp = textPaint(tf, size, color).apply { textAlign = align }
+        val tp = textPaint(tf, size, color).apply {
+            textAlign = align
+            if (bold > 0f) { style = Paint.Style.FILL_AND_STROKE; strokeWidth = bold; strokeJoin = Paint.Join.ROUND }
+        }
         val b = Rect(); tp.getTextBounds(text, 0, text.length, b)
         val width = tp.measureText(text)
         val left = when (align) { Paint.Align.CENTER -> x - width / 2; Paint.Align.RIGHT -> x - width; else -> x }
@@ -311,6 +317,7 @@ class FlyerRenderer(private val context: Context) {
         if (shadow) {
             val sp = textPaint(tf, size, withAlpha(Color.BLACK, 190)).apply {
                 textAlign = align; maskFilter = BlurMaskFilter(12f, BlurMaskFilter.Blur.NORMAL)
+                if (bold > 0f) { style = Paint.Style.FILL_AND_STROKE; strokeWidth = bold }
             }
             c.drawText(text, x, baseline + 8f, sp)
         }
@@ -333,7 +340,59 @@ class FlyerRenderer(private val context: Context) {
                 c.drawLine(sx, sy, sx + l * cos(a), sy + l * sin(a), er)
             }
         }
+        if (dry > 0) dryBrush(c, rnd, tp, text, x, baseline, area, dry)
         c.restoreToCount(layer)
+    }
+
+    /**
+     * Trockenpinsel-Look: feine Streifen in Strichrichtung (kursiv, steil) und
+     * kurze Querstriche an zufälligen Punkten der Buchstabenkontur (ausgefranste Kanten).
+     * [dry] = Anzahl Streifen bezogen auf eine 1080×230-Titelzeile.
+     */
+    private fun dryBrush(c: Canvas, rnd: Random, tp: Paint, text: String, x: Float, baseline: Float, area: RectF, dry: Int) {
+        val er = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT); style = Paint.Style.STROKE; strokeWidth = 1f
+        }
+        val n = (dry * (area.width() * area.height()) / (1080f * 230f)).toInt().coerceAtLeast(1)
+        val angles = floatArrayOf(-76f, -76f, -72f, -80f, -6f)
+        repeat(n) {
+            val sx = rnd.nextFloat(area.left, area.right); val sy = rnd.nextFloat(area.top, area.bottom)
+            val a = Math.toRadians(angles[rnd.nextInt(angles.size)].toDouble()).toFloat()
+            val l = rnd.nextFloat(14f, 60f)
+            c.drawLine(sx, sy, sx + l * cos(a), sy + l * sin(a), er)
+        }
+        er.style = Paint.Style.FILL
+        val radii = floatArrayOf(0.7f, 1f, 1.3f)
+        repeat((n * 0.6f).toInt()) {
+            c.drawCircle(rnd.nextFloat(area.left, area.right), rnd.nextFloat(area.top, area.bottom), radii[rnd.nextInt(3)], er)
+        }
+        // Kontur abtasten und kurze waagrechte "Fransen" herauslöschen
+        val outline = Path()
+        val plain = Paint(tp).apply { style = Paint.Style.FILL }
+        val startX = when (tp.textAlign) {
+            Paint.Align.CENTER -> x - plain.measureText(text) / 2f
+            Paint.Align.RIGHT -> x - plain.measureText(text)
+            else -> x
+        }
+        plain.textAlign = Paint.Align.LEFT
+        plain.getTextPath(text, 0, text.length, startX, baseline, outline)
+        er.style = Paint.Style.STROKE
+        val pm = android.graphics.PathMeasure(outline, false)
+        val pos = FloatArray(2)
+        do {
+            val len = pm.length
+            var d = 0f
+            while (d < len) {
+                if (rnd.nextFloat() < 0.24f) {
+                    pm.getPosTan(d, pos, null)
+                    val a = Math.toRadians((if (rnd.nextBoolean()) -7f else 175f).toDouble()).toFloat()
+                    val l = rnd.nextFloat(4f, 14f)
+                    er.strokeWidth = if (rnd.nextBoolean()) 1f else 2f
+                    c.drawLine(pos[0], pos[1], pos[0] + l * cos(a), pos[1] + l * sin(a), er)
+                }
+                d += 4f
+            }
+        } while (pm.nextContour())
     }
 
     private fun drawCenterCrop(c: Canvas, src: Bitmap, dst: RectF, focusY: Float) {
