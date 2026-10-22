@@ -111,7 +111,9 @@ class WebPageExtractor(private val context: Context) {
                 val snap = parseSnapshot(message.data) ?: return@addWebMessageListener
                 collected.removeAll { it.url == snap.url }
                 collected.add(snap)
-                if (!done.isCompleted && accept(snap)) done.complete(snap)
+                // Fehler beim Auswerten dürfen die App nicht beenden (Rückruf läuft im Hauptthread)
+                val ok = try { !done.isCompleted && accept(snap) } catch (t: Throwable) { false }
+                if (ok) done.complete(snap)
             }
 
             when {

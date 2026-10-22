@@ -225,15 +225,15 @@ object MatchParser {
     private val minuteAny = Regex("""(?<![\d:])(\d{1,3}(?:\s*\+\s*\d{1,2})?)\s*['’´]|(?<![\d:.])(\d{1,3}(?:\s*\+\s*\d{1,2})?)\.(?!\d)""")
     private val runScore = Regex("""(?<!\d)(\d{1,2})\s*:\s*(\d{1,2})(?!\d)""")
     private val nameRx = Regex("""[A-Za-zÀ-ÖØ-öø-ÿĀ-žŞşĞğİıČčŠšŽžĆćĐđ][A-Za-zÀ-ÖØ-öø-ÿĀ-žŞşĞğİıČčŠšŽžĆćĐđ'’.\- ]{1,40}""")
-    private val goalWord = Regex("""(?U)\b(Tor|Tore|Treffer|Elfmeter|Strafstoß|Eigentor|Goal)\b|⚽""", RegexOption.IGNORE_CASE)
+    private val goalWord = Regex("""\b(Tor|Tore|Treffer|Elfmeter|Strafstoß|Eigentor|Goal)\b|⚽""", RegexOption.IGNORE_CASE)
     private val hardNoise = Regex(
-        """(?U)\b(gelbe?|gelb-rot|gelbrot|rote?|karte|verwarnung|ausschluss|wechsel|eingewechselt|ausgewechselt|""" +
+        """\b(gelbe?|gelb-rot|gelbrot|rote?|karte|verwarnung|ausschluss|wechsel|eingewechselt|ausgewechselt|""" +
             """schiedsrichter|zuschauer|assistent|trainer|anpfiff|abpfiff|halbzeit|pause|spielende|spielbeginn)\b""",
         RegexOption.IGNORE_CASE,
     )
-    private val substitution = Regex("""(?U)\bfür\b""", RegexOption.IGNORE_CASE)
+    private val substitution = Regex("""\bfür\b""", RegexOption.IGNORE_CASE)
     private val filler = Regex(
-        """(?U)\b(durch|tor|tore|treffer|für|von|per|nach|elfmeter|strafstoß|kopfball|schuss|vorlage|assist|eigentor|""" +
+        """\b(durch|tor|tore|treffer|für|von|per|nach|elfmeter|strafstoß|kopfball|schuss|vorlage|assist|eigentor|""" +
             """zum|zur|zu|ein|einem|einen|erzielt|trifft|goal|min|minute)\b""",
         RegexOption.IGNORE_CASE,
     )
@@ -251,7 +251,7 @@ object MatchParser {
         var x = t
         listOf(match.homeTeam, match.awayTeam).filter { it.isNotBlank() }.forEach { team ->
             x = x.replace(team, "  ", ignoreCase = true)
-            teamTokens(team).forEach { tok -> x = x.replace(Regex("""(?U)\b${Regex.escape(tok)}\b""", RegexOption.IGNORE_CASE), "  ") }
+            teamTokens(team).forEach { tok -> x = x.replace(Regex("""\b${Regex.escape(tok)}\b""", RegexOption.IGNORE_CASE), "  ") }
         }
         x = x.replace(minuteAny, "  ").replace(runScore, "  ").replace(filler, "  ")
             .replace(Regex("""[()\[\]:⚽•|]"""), "  ").replace(Regex("""\s[-–]\s"""), "  ")

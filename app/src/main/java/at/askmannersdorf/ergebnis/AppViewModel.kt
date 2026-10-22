@@ -100,24 +100,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun fetchMatch() {
         if (fetching) return
         fetching = true
-        fetchLog = listOf("Frage LMO / ÖFB ab …")
+        fetchLog = listOf("Frage Ligaportal / LMO ab …")
         viewModelScope.launch {
             try {
                 val r = repo.fetchLatest(settings)
                 fetchLog = r.log
                 rawText = r.rawText
                 r.match?.let { m ->
+                    val oppChanged = m.opponent(settings.clubKeyword) != match.opponent(settings.clubKeyword)
                     match = m
                     opponentShort = SmsFormatter.shortTeamName(m.opponent(settings.clubKeyword))
                     smsEdited = false
                     postEdited = false
                     refreshSms()
-                    opponentLogo = null
-                    val oppUrl = if (m.isAskHome(settings.clubKeyword)) m.awayLogoUrl else m.homeLogoUrl
-                    oppUrl?.let { url -> opponentLogo = FlyerShare.downloadImage(url) }
+                    // Gegner-Logo kommt vom Upload; bei neuem Gegner altes Logo verwerfen
+                    if (oppChanged) opponentLogo = null
                 }
-            } catch (e: Exception) {
-                fetchLog = fetchLog + "Fehler: ${e.message}"
+            } catch (e: Throwable) {
+                // Nie die App abstürzen lassen – Fehler im Protokoll anzeigen
+                fetchLog = fetchLog + "Fehler bei der Abfrage: ${e.javaClass.simpleName}: ${e.message ?: e.cause?.message ?: ""}"
             } finally {
                 fetching = false
                 regenerateFlyer()

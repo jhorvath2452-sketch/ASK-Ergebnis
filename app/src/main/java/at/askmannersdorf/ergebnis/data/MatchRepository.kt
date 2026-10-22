@@ -218,7 +218,9 @@ class MatchRepository(context: Context) {
         // Weg 1: Spielplan-HTML direkt lesen ("Runde N"-Abschnitte, Ergebnis "1:4 (1:2)")
         val html = fetchHtml(s.ligaportalUrl)
         if (html != null) {
-            val games = LigaportalHtml.parseSchedule(html)
+            val games = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                runCatching { LigaportalHtml.parseSchedule(html) }.getOrDefault(emptyList())
+            }
             val g = LigaportalHtml.latestFinished(games, s.clubKeyword)
             raw.append("── Ligaportal Spielplan (HTML, ").append(games.size).append(" Runden erkannt) ──\n")
             games.takeLast(6).forEach {
