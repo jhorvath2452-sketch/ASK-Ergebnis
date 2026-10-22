@@ -143,7 +143,7 @@ class FlyerRenderer(private val context: Context) {
         c.drawRect(56f, y0 + 347f, w - 56f, y0 + 349f, p)
 
         // Torschützen
-        val askGoals = m.goals.filter { it.forAsk }
+        val askGoals = m.sortedGoals.filter { it.forAsk && it.scorer.isNotBlank() }
         if (askGoals.isNotEmpty()) {
             drawSpacedCentered(c, "TORE ${input.clubDisplayName.uppercase()}", w / 2f, y0 + 408f, barlowBold, 27f, LIME, 0.35f)
             drawScorers(c, buildScorerSegments(askGoals.map { it.scorer to it.minute }, input.showMinutes), w / 2f, y0 + 480f, maxWidth = w - 100f)
@@ -257,10 +257,8 @@ class FlyerRenderer(private val context: Context) {
     }
 
     /** "Srok Marcel" / "Marcel Srok" → wir nehmen den Namen so, wie er geliefert wird, aber kürzen sehr lange. */
-    private fun lastName(full: String): String {
-        val t = full.trim().replace(Regex("""\s+"""), " ")
-        return if (t.length > 18 && t.contains(' ')) t.substringBefore(' ') else t
-    }
+    private fun lastName(full: String): String =
+        at.askmannersdorf.ergebnis.data.SmsFormatter.shortScorer(full)
 
     private fun drawScorers(c: Canvas, segs: List<ScorerSegment>, cx: Float, baseline: Float, maxWidth: Float) {
         if (segs.isEmpty()) return

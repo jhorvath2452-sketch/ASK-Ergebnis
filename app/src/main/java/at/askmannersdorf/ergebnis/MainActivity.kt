@@ -149,7 +149,7 @@ private fun MatchSection(vm: AppViewModel) {
                 CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
                 Text("Wird abgefragt …")
-            } else Text("Ergebnis abrufen (ÖFB / Ligaportal)")
+            } else Text("Ergebnis abrufen (LMO / ÖFB)")
         }
         vm.fetchLog.forEach { Text("• $it", fontSize = 13.sp, color = Color.DarkGray) }
 
@@ -167,12 +167,25 @@ private fun MatchSection(vm: AppViewModel) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                m.halfHome?.toString() ?: "", { vm.updateMatch(m.copy(halfHome = it.filter(Char::isDigit).take(2).toIntOrNull())) },
+                label = { Text("Halbzeit Heim") }, singleLine = true, modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+            OutlinedTextField(
+                m.halfAway?.toString() ?: "", { vm.updateMatch(m.copy(halfAway = it.filter(Char::isDigit).take(2).toIntOrNull())) },
+                label = { Text("Halbzeit Gast") }, singleLine = true, modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        }
         if (m.date.isNotBlank() || m.source.isNotBlank()) {
             Text(listOf(m.date, m.source.takeIf { it.isNotBlank() }?.let { "Quelle: $it" }).filterNotNull().filter { it.isNotBlank() }.joinToString(" · "), fontSize = 13.sp, color = Color.Gray)
         }
 
         HorizontalDivider()
-        Text("Torschützen (Haken = Tor für ASK)", fontWeight = FontWeight.SemiBold)
+        Text("Tore in Reihenfolge (Haken = Tor für ASK)", fontWeight = FontWeight.SemiBold)
+        Text("Gegentore ohne Haken eintragen, damit der Zwischenstand in der SMS stimmt.", fontSize = 12.sp, color = Color.Gray)
         m.goals.forEachIndexed { i, g -> GoalRow(g, { vm.updateGoal(i, it) }, { vm.removeGoal(i) }) }
         OutlinedButton(onClick = vm::addGoal) { Text("+ Tor hinzufügen") }
 
@@ -203,13 +216,26 @@ private fun SmsSection(vm: AppViewModel) {
     val groupName = vm.groups.firstOrNull { it.id == vm.selectedGroupId }?.name
 
     Section("2 · Ergebnis-SMS") {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                vm.opponentShort, vm::onOpponentShortChanged, label = { Text("Gegner kurz") },
+                singleLine = true, modifier = Modifier.weight(1.4f),
+            )
+            OutlinedTextField(
+                vm.u23Result, vm::onU23Changed, label = { Text("U23 (z. B. 4-0)") }, singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+        }
         OutlinedTextField(
-            vm.smsText, { vm.smsText = it }, label = { Text("SMS-Text") },
+            vm.smsText, vm::onSmsTextChanged, label = { Text("SMS-Text") },
             modifier = Modifier.fillMaxWidth(), minLines = 4,
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("$chars Zeichen · $parts SMS", fontSize = 13.sp, color = if (parts > 1) Color(0xFFB45309) else Color.Gray, modifier = Modifier.weight(1f))
-            TextButton(onClick = vm::suggestSmsText, enabled = vm.match.isComplete) { Text("Vorschlag einfügen") }
+            Text(
+                "$chars Zeichen · $parts SMS" + if (vm.smsEdited) " · von Hand geändert" else "",
+                fontSize = 13.sp, color = if (parts > 1) Color(0xFFB45309) else Color.Gray, modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = vm::regenerateSms, enabled = vm.match.isComplete) { Text("Text neu erzeugen") }
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -345,10 +371,12 @@ private fun SettingsScreen(initial: AppSettings, onSave: (AppSettings) -> Unit) 
             Field("API-Adresse", s.esendexBaseUrl) { s = s.copy(esendexBaseUrl = it) }
         }
         Section("Spieldaten") {
+            Field("LMO-Ligaseite (Hauptquelle)", s.lmoUrl) { s = s.copy(lmoUrl = it) }
             Field("ÖFB-Widget-Schlüssel", s.oefbWidgetKey) { s = s.copy(oefbWidgetKey = it) }
             Field("Vereins-Homepage (wo das Widget eingebunden ist)", s.oefbEmbedOrigin) { s = s.copy(oefbEmbedOrigin = it) }
             Field("Ligaportal-Teamseite (Ersatzquelle)", s.ligaportalUrl) { s = s.copy(ligaportalUrl = it) }
             Field("Vereinsname erkennen an", s.clubKeyword) { s = s.copy(clubKeyword = it) }
+            Field("Eigener Kurzname in der SMS", s.smsShortName) { s = s.copy(smsShortName = it) }
         }
         Section("Flyer") {
             Field("Vereinsname am Flyer", s.clubDisplayName) { s = s.copy(clubDisplayName = it) }

@@ -161,6 +161,149 @@ object MatchParser {
 
     private fun normMinute(m: String) = m.trim().trimEnd('.', '\'', '’', '´') + "'"
 
+    // ── LMO (askmannersdorf.at/LMO_2026) ──────────────────────────────
+
+    private val lmoScore = Regex("""^(\d{1,2})\s*:\s*(\d{1,2})$""")
+    private val lmoOpen = Regex("""^[-_]\s*:\s*[-_]$""")
+    private val lmoHeading = Regex("""Spieltag\s+(\d{1,2})""")
+
+    /** Spieltag-Nummer aus der Überschrift "Ergebnisse Spieltag 10". */
+    fun lmoMatchday(text: String): Int? =
+        text.lines().firstOrNull { it.contains("Ergebnisse", true) && lmoHeading.containsMatchIn(it) }
+            ?.let { lmoHeading.find(it)?.groupValues?.get(1)?.toIntOrNull() }
+            ?: lmoHeading.find(text)?.groupValues?.get(1)?.toIntOrNull()
+
+    sealed class LmoRowResult {
+        data class Played(val match: Match) : LmoRowResult()
+        data class Open(val opponent: String) : LmoRowResult()
+        object NotFound : LmoRowResult()
+    }
+
+    /**
+     * Sucht in den Tabellenzeilen eines LMO-Spieltags das Spiel des eigenen Vereins.
+     * Zeile z. B.: ["18.10.2026 15:00", "SG Weissenbach/Klausen", "ASK Mannersdorf", "1 : 4", "📋"]
+     */
+    fun parseLmoRows(rows: List<PageRow>, clubKeyword: String): LmoRowResult {
+        for (row in rows) {
+            val cells = row.cells.map { it.replace(' ', ' ').replace(Regex("""\s+"""), " ").trim() }
+            if (cells.none { it.contains(clubKeyword, true) }) continue
+            val scoreIdx = cells.indexOfFirst { lmoScore.matches(it) || lmoOpen.matches(it) }
+            if (scoreIdx < 0) continue
+            fun isTeam(c: String) = c.length >= 3 && c.any(Char::isLetter) &&
+                !dateRx.containsMatchIn(c) && !c.contains("Spielbericht", true)
+            // Teams in Zeilenreihenfolge: erste = Heim, zweite = Gast (Ergebnis davor, dazwischen oder danach)
+            val teams = cells.filterIndexed { idx, c -> idx != scoreIdx && isTeam(c) }
+            if (teams.size < 2) continue
+            val home = teams[0]
+            val away = teams[1]
+            if (!home.contains(clubKeyword, true) && !away.contains(clubKeyword, true)) continue
+
+            val sm = lmoScore.find(cells[scoreIdx])
+            if (sm == null) {
+                return LmoRowResult.Open(if (home.contains(clubKeyword, true)) away else home)
+            }
+            val date = cells.firstNotNullOfOrNull { dateRx.find(it)?.value } ?: ""
+            val report = row.links.firstOrNull { it.contains("Spielbericht", true) }
+            val logos = row.imgs.filter { it.startsWith("http") }
+            return LmoRowResult.Played(
+                Match(
+                    homeTeam = home, awayTeam = away,
+                    homeGoals = sm.groupValues[1].toInt(), awayGoals = sm.groupValues[2].toInt(),
+                    date = date, reportUrl = report,
+                    homeLogoUrl = logos.getOrNull(0), awayLogoUrl = logos.getOrNull(1),
+                    source = "LMO",
+                )
+            )
+        }
+        return LmoRowResult.NotFound
+    }
+
+    // ── ÖFB-Spielbericht: Halbzeit + Torfolge ─────────────────────────
+
+    private val parenScore = Regex("""\(\s*(\d{1,2})\s*:\s*(\d{1,2})\s*\)""")
+    private val htLabel = Regex("""\b(?:Halbzeit|HZ|Pause)\b\D{0,12}(\d{1,2})\s*:\s*(\d{1,2})""", RegexOption.IGNORE_CASE)
+    private val minuteAny = Regex("""(?<![\d:])(\d{1,3}(?:\s*\+\s*\d{1,2})?)\s*['’´]|(?<![\d:])(\d{1,3}(?:\s*\+\s*\d{1,2})?)\.(?!\d)""")
+    private val runScore = Regex("""(?<!\d)(\d{1,2})\s*:\s*(\d{1,2})(?!\d)""")
+    private val nameRx = Regex("""[A-Za-zÀ-ÖØ-öø-ÿĀ-žŞşĞğİıČčŠšŽžĆćĐđ][A-Za-zÀ-ÖØ-öø-ÿĀ-žŞşĞğİıČčŠšŽžĆćĐđ'’.\- ]{1,40}""")
+    private val reportNoise = listOf(
+        "gelb", "rot", "karte", "wechsel", " für ", "eingewechselt", "ausgewechselt",
+        "schiedsrichter", "zuschauer", "assistent", "trainer", "anpfiff", "abpfiff",
+    )
+
+    /**
+     * Ergänzt ein bereits bekanntes Spiel (Teams + Endstand aus LMO) um Halbzeit und Tore
+     * aus dem Text des ÖFB-Spielberichts. Gibt das Spiel unverändert zurück, wenn nichts passt.
+     */
+    fun enrichFromReport(text: String, match: Match, clubKeyword: String): Match {
+        val hg = match.homeGoals ?: return match
+        val ag = match.awayGoals ?: return match
+        val askHome = match.isAskHome(clubKeyword)
+        val lines = text.lines().map { it.replace(' ', ' ').trim() }.filter { it.isNotEmpty() }
+
+        // Halbzeit: "Halbzeit 1:2" oder "(1:2)" – muss <= Endstand sein
+        fun plausibleHt(h: Int, a: Int) = h <= hg && a <= ag
+        val ht = htLabel.find(text)?.let { it.groupValues[1].toInt() to it.groupValues[2].toInt() }
+            ?.takeIf { plausibleHt(it.first, it.second) }
+            ?: parenScore.findAll(text).map { it.groupValues[1].toInt() to it.groupValues[2].toInt() }
+                .firstOrNull { plausibleHt(it.first, it.second) }
+
+        // Torzeilen: Minute + Zwischenstand (+ Name), auch über 2–3 Zeilen verteilt
+        val goals = mutableListOf<Goal>()
+        var prevH = 0; var prevA = 0
+        var i = 0
+        while (i < lines.size && goals.size < hg + ag) {
+            val window = (i until minOf(lines.size, i + 3)).map { lines[it] }
+            val first = window[0]
+            val low = first.lowercase()
+            if (reportNoise.any { low.contains(it) }) { i++; continue }
+            val mm = minuteAny.find(first)
+            if (mm == null) { i++; continue }
+            // Zwischenstand in derselben Zeile oder in den nächsten zwei Zeilen
+            var used = 1
+            var rs: MatchResult? = runScore.find(first.removeRange(mm.range))
+            if (rs == null) {
+                for (k in 1 until window.size) {
+                    if (reportNoise.any { window[k].lowercase().contains(it) } || minuteAny.containsMatchIn(window[k])) break
+                    rs = runScore.find(window[k]); if (rs != null) { used = k + 1; break }
+                }
+            }
+            if (rs == null) { i++; continue }
+            val h = rs.groupValues[1].toInt(); val a = rs.groupValues[2].toInt()
+            val homeScored = when {
+                h == prevH + 1 && a == prevA -> true
+                a == prevA + 1 && h == prevH -> false
+                else -> { i++; continue } // passt nicht zur Torfolge -> keine Torzeile
+            }
+            prevH = h; prevA = a
+            val minute = (mm.groupValues[1].ifEmpty { mm.groupValues[2] }).replace(" ", "") + "'"
+            fun candidates(t: String): List<String> =
+                t.replace(minuteAny, "  ").replace(runScore, "  ").replace(Regex("""[()\[\]:]"""), "  ")
+                    .split(Regex("""\s{2,}|,|;""")).map { it.trim() }
+                    .mapNotNull { part -> nameRx.find(part)?.value?.trim() }
+                    .filter { n ->
+                        n.length >= 2 && !n.equals(match.homeTeam, true) && !n.equals(match.awayTeam, true) &&
+                            reportNoise.none { n.lowercase().contains(it.trim()) } && !n.equals("Tor", true)
+                    }
+            // Name: zuerst in der Minutenzeile, dann zwischen Minute und Zwischenstand,
+            // dann in der Zeile direkt nach dem Zwischenstand
+            val name = candidates(first.removeRange(mm.range)).firstOrNull()
+                ?: (1 until used).flatMap { candidates(window[it]) }.firstOrNull()
+                ?: lines.getOrNull(i + used)?.takeIf { !minuteAny.containsMatchIn(it) && !runScore.containsMatchIn(it) }
+                    ?.let { candidates(it).firstOrNull() }
+                ?: ""
+            val forAsk = homeScored == askHome
+            goals += Goal(minute, if (forAsk) name else "", forAsk)
+            i += used
+        }
+
+        val goalsOk = goals.size == hg + ag && prevH == hg && prevA == ag
+        return match.copy(
+            halfHome = ht?.first ?: match.halfHome,
+            halfAway = ht?.second ?: match.halfAway,
+            goals = if (goalsOk) goals else match.goals,
+        )
+    }
+
     /** Sucht passende Logos: zuerst über alt-Text, sonst die ersten Wappen-Bilder. */
     fun findLogos(snapshot: PageSnapshot, home: String, away: String): Pair<String?, String?> {
         fun tokens(t: String) = t.lowercase().split(Regex("""[^a-zäöüß0-9]+""")).filter { it.length >= 4 }

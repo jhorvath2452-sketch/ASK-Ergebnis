@@ -12,6 +12,7 @@ import at.askmannersdorf.ergebnis.data.AppSettings
 import at.askmannersdorf.ergebnis.data.EsendexClient
 import at.askmannersdorf.ergebnis.data.MatchRepository
 import at.askmannersdorf.ergebnis.data.SettingsStore
+import at.askmannersdorf.ergebnis.data.SmsFormatter
 import at.askmannersdorf.ergebnis.data.SmsGroup
 import at.askmannersdorf.ergebnis.flyer.FlyerFormat
 import at.askmannersdorf.ergebnis.flyer.FlyerInput
@@ -20,7 +21,6 @@ import at.askmannersdorf.ergebnis.flyer.FlyerShare
 import at.askmannersdorf.ergebnis.flyer.ShareTarget
 import at.askmannersdorf.ergebnis.model.Goal
 import at.askmannersdorf.ergebnis.model.Match
-import at.askmannersdorf.ergebnis.model.Outcome
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,7 +39,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var rawText by mutableStateOf(""); private set
 
     // SMS
-    var smsText by mutableStateOf("")
+    var smsText by mutableStateOf(""); private set
+    /** true, sobald der Text von Hand geändert wurde – dann nicht mehr automatisch überschreiben. */
+    var smsEdited by mutableStateOf(false); private set
+    var u23Result by mutableStateOf(""); private set
+    var opponentShort by mutableStateOf(""); private set
     var groups by mutableStateOf<List<SmsGroup>>(emptyList()); private set
     var selectedGroupId by mutableStateOf(settings.lastGroupId)
     var smsBusy by mutableStateOf(false); private set
@@ -58,6 +62,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveSettings(s: AppSettings) {
         store.save(s); settings = store.load()
         groups = emptyList()
+        refreshSms()
         regenerateFlyer()
     }
 
@@ -66,7 +71,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun fetchMatch() {
         if (fetching) return
         fetching = true
-        fetchLog = listOf("Frage ÖFB-Widget ab …")
+        fetchLog = listOf("Frage LMO / ÖFB ab …")
         viewModelScope.launch {
             try {
                 val r = repo.fetchLatest(settings)
@@ -74,6 +79,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 rawText = r.rawText
                 r.match?.let { m ->
                     match = m
+                    opponentShort = SmsFormatter.shortTeamName(m.opponent(settings.clubKeyword))
+                    smsEdited = false
+                    refreshSms()
                     opponentLogo = null
                     val oppUrl = if (m.isAskHome(settings.clubKeyword)) m.awayLogoUrl else m.homeLogoUrl
                     oppUrl?.let { url -> opponentLogo = FlyerShare.downloadImage(url) }
@@ -87,7 +95,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun updateMatch(m: Match) { match = m; regenerateFlyer() }
+    fun updateMatch(m: Match) {
+        val oldOpp = match.opponent(settings.clubKeyword)
+        match = m
+        val newOpp = m.opponent(settings.clubKeyword)
+        if (newOpp != oldOpp && (opponentShort.isBlank() || opponentShort == SmsFormatter.shortTeamName(oldOpp))) {
+            opponentShort = SmsFormatter.shortTeamName(newOpp)
+        }
+        refreshSms()
+        regenerateFlyer()
+    }
 
     fun updateGoal(index: Int, g: Goal) =
         updateMatch(match.copy(goals = match.goals.toMutableList().also { it[index] = g }))
@@ -99,21 +116,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ── SMS ────────────────────────────────────────────────────────
 
-    fun suggestSmsText() {
-        val m = match
-        val kw = settings.clubKeyword
-        if (!m.isComplete) return
-        val head = when (m.outcome(kw)) {
-            Outcome.WIN -> if (m.isAskHome(kw)) "Heimsieg!" else "Auswärtssieg!"
-            Outcome.DRAW -> "Unentschieden."
-            Outcome.LOSS -> "Leider verloren."
-            null -> "Endstand:"
-        }
-        val scorers = m.goals.filter { it.forAsk && it.scorer.isNotBlank() }
-            .groupBy { it.scorer.trim() }
-            .map { (name, list) -> if (list.size > 1) "$name (${list.size})" else name }
-        val tore = if (scorers.isNotEmpty()) " Tore: ${scorers.joinToString(", ")}." else ""
-        smsText = "$head ${m.homeTeam} - ${m.awayTeam} ${m.homeGoals}:${m.awayGoals}.$tore"
+    fun onSmsTextChanged(t: String) { smsText = t; smsEdited = true }
+
+    fun onU23Changed(t: String) { u23Result = t; refreshSms() }
+
+    fun onOpponentShortChanged(t: String) { opponentShort = t; refreshSms() }
+
+    /** Text nach Vereinsmuster neu erzeugen (überschreibt Handänderungen). */
+    fun regenerateSms() { smsEdited = false; refreshSms() }
+
+    private fun refreshSms() {
+        if (smsEdited) return
+        smsText = SmsFormatter.build(
+            match, settings.clubKeyword, settings.smsShortName,
+            opponentShort.ifBlank { SmsFormatter.shortTeamName(match.opponent(settings.clubKeyword)) },
+            u23Result,
+        )
     }
 
     fun loadGroups() {

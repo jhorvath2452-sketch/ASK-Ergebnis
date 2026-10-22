@@ -18,12 +18,16 @@ import org.json.JSONObject
 data class PageImage(val src: String, val alt: String)
 data class PageLink(val href: String, val text: String)
 
+/** Eine Tabellenzeile: Zelltexte, Links und Bilder darin. */
+data class PageRow(val cells: List<String>, val links: List<String>, val imgs: List<String>)
+
 /** Text, Bilder und Links eines geladenen Frames (auch aus iFrames). */
 data class PageSnapshot(
     val url: String,
     val text: String,
     val images: List<PageImage>,
     val links: List<PageLink>,
+    val rows: List<PageRow> = emptyList(),
 )
 
 /**
@@ -48,8 +52,15 @@ class WebPageExtractor(private val context: Context) {
               var links = [].slice.call(document.links).slice(0, 400).map(function(a){
                 return {href: a.href || '', text: (a.innerText || '').trim().slice(0, 200)};
               });
+              var rows = [].slice.call(document.querySelectorAll('tr')).slice(0, 300).map(function(tr){
+                return {
+                  cells: [].slice.call(tr.children).map(function(td){ return (td.innerText || '').trim(); }),
+                  links: [].slice.call(tr.querySelectorAll('a')).map(function(a){ return a.href || ''; }),
+                  imgs: [].slice.call(tr.querySelectorAll('img')).map(function(i){ return i.currentSrc || i.src || ''; })
+                };
+              });
               if (window.AskBridge) {
-                AskBridge.postMessage(JSON.stringify({url: location.href, text: t, imgs: imgs, links: links}));
+                AskBridge.postMessage(JSON.stringify({url: location.href, text: t, imgs: imgs, links: links, rows: rows}));
               }
             } catch (e) {}
             if (tries < 30) setTimeout(snap, 1000);
@@ -135,6 +146,15 @@ class WebPageExtractor(private val context: Context) {
                     val l = links!!.getJSONObject(it)
                     PageLink(l.optString("href"), l.optString("text"))
                 },
+                rows = o.optJSONArray("rows")?.let { rows ->
+                    (0 until rows.length()).map { idx ->
+                        val r = rows.getJSONObject(idx)
+                        fun strings(key: String) = r.optJSONArray(key)?.let { a ->
+                            (0 until a.length()).map { a.optString(it) }
+                        } ?: emptyList()
+                        PageRow(strings("cells"), strings("links"), strings("imgs"))
+                    }
+                } ?: emptyList(),
             )
         } catch (e: Exception) {
             null
