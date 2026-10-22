@@ -54,7 +54,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var flyerEnabled by mutableStateOf(true)
     var photo by mutableStateOf<Bitmap?>(null); private set
     var opponentLogo by mutableStateOf<Bitmap?>(null); private set
-    var showMinutes by mutableStateOf(false)
+    var showMinutes by mutableStateOf(true)
     var format by mutableStateOf(FlyerFormat.FEED)
     var flyer by mutableStateOf<Bitmap?>(null); private set
     var flyerStatus by mutableStateOf<String?>(null); private set
@@ -251,12 +251,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun shareFlyer(activity: android.app.Activity, target: ShareTarget) {
         val bmp = flyer ?: return
         viewModelScope.launch {
-            val uri = FlyerShare.toShareUri(activity, bmp, fileName())
             val caption = postText.takeIf { it.isNotBlank() && target != ShareTarget.WHATSAPP }
             if (caption != null) {
                 val cm = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 cm.setPrimaryClip(android.content.ClipData.newPlainText("Beitragstext", caption))
             }
+            if (target == ShareTarget.BUSINESS_SUITE) {
+                // Business Suite nimmt geteilte Bilder nicht an ("Content-Art wird nicht unterstützt"):
+                // Flyer in die Galerie legen und die App öffnen – dort "Beitrag/Story erstellen" + neuestes Foto.
+                val saved = FlyerShare.saveToGallery(activity, bmp, fileName())
+                val opened = FlyerShare.launchApp(activity, target.pkg!!)
+                flyerStatus = when {
+                    !saved -> "Flyer konnte nicht gespeichert werden."
+                    !opened -> "Flyer ist in der Galerie (Bilder/ASK Ergebnis). Business Suite ist nicht installiert."
+                    else -> "Flyer ist in der Galerie, Beitragstext kopiert. In der Business Suite „Beitrag“ oder „Story“ erstellen und das neueste Foto wählen."
+                }
+                return@launch
+            }
+            val uri = FlyerShare.toShareUri(activity, bmp, fileName())
             val ok = FlyerShare.share(activity, uri, target, caption)
             flyerStatus = when {
                 !ok -> "${target.label} wurde nicht gefunden – bitte im Teilen-Menü auswählen."

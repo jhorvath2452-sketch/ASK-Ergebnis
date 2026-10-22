@@ -65,6 +65,16 @@ object FlyerShare {
         return true
     }
 
+    /** Startet eine installierte App (z. B. Meta Business Suite). false, wenn sie fehlt. */
+    fun launchApp(context: Context, pkg: String): Boolean {
+        val i = context.packageManager.getLaunchIntentForPackage(pkg) ?: return false
+        return try {
+            context.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     /** Speichert den Flyer in der Galerie (Ordner Bilder/ASK Ergebnis). */
     suspend fun saveToGallery(context: Context, bmp: Bitmap, name: String): Boolean = withContext(Dispatchers.IO) {
         try {

@@ -16,8 +16,8 @@ data class AppSettings(
     val oefbWidgetKey: String = "e19268845f",
     /** Domain der Vereinsseite, auf der das ÖFB-Widget eingebunden ist. */
     val oefbEmbedOrigin: String = "https://www.askmannersdorf.at",
-    /** Teamseite auf ligaportal.at (Rückfallebene). */
-    val ligaportalUrl: String = "",
+    /** Spielplan auf ligaportal.at (Hauptquelle für Ergebnis + Torschützen). */
+    val ligaportalUrl: String = "https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/spielplan",
     /** Woran der eigene Verein im Teamnamen erkannt wird. */
     val clubKeyword: String = "Mannersdorf",
     val clubDisplayName: String = "ASK Mannersdorf",
@@ -38,10 +38,10 @@ class SettingsStore(context: Context) {
             smsSender = prefs.getString("smsSender", d.smsSender)!!,
             smsQuality = prefs.getString("smsQuality", d.smsQuality)!!,
             lastGroupId = prefs.getString("lastGroupId", d.lastGroupId)!!,
-            lmoUrl = prefs.getString("lmoUrl", d.lmoUrl)!!,
+            lmoUrl = prefs.getString("lmoUrl", d.lmoUrl)!!.ifBlank { d.lmoUrl },
             oefbWidgetKey = prefs.getString("oefbWidgetKey", d.oefbWidgetKey)!!,
             oefbEmbedOrigin = prefs.getString("oefbEmbedOrigin", d.oefbEmbedOrigin)!!,
-            ligaportalUrl = prefs.getString("ligaportalUrl", d.ligaportalUrl)!!,
+            ligaportalUrl = prefs.getString("ligaportalUrl", d.ligaportalUrl)!!.ifBlank { d.ligaportalUrl },
             clubKeyword = prefs.getString("clubKeyword", d.clubKeyword)!!,
             clubDisplayName = prefs.getString("clubDisplayName", d.clubDisplayName)!!,
             smsShortName = prefs.getString("smsShortName", d.smsShortName)!!,

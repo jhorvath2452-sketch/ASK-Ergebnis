@@ -237,37 +237,17 @@ class FlyerRenderer(private val context: Context) {
         }
     }
 
-    /** Ein Torschütze: Name + Zusatz (z. B. "2×" oder Minuten). */
-    data class ScorerSegment(val name: String, val extra: String)
+    fun buildScorerSegments(goals: List<Pair<String, String>>, showMinutes: Boolean) =
+        ScorerFormat.segments(goals, showMinutes)
 
-    fun buildScorerSegments(goals: List<Pair<String, String>>, showMinutes: Boolean): List<ScorerSegment> {
-        val order = LinkedHashMap<String, MutableList<String>>()
-        goals.forEach { (scorer, minute) ->
-            val key = lastName(scorer)
-            order.getOrPut(key) { mutableListOf() }.add(minute)
-        }
-        return order.map { (name, minutes) ->
-            val extra = when {
-                showMinutes -> minutes.filter { it.isNotBlank() }.joinToString(" ")
-                minutes.size > 1 -> "${minutes.size}×"
-                else -> ""
-            }
-            ScorerSegment(name.uppercase(), extra)
-        }
-    }
-
-    /** "Srok Marcel" / "Marcel Srok" → wir nehmen den Namen so, wie er geliefert wird, aber kürzen sehr lange. */
-    private fun lastName(full: String): String =
-        at.askmannersdorf.ergebnis.data.SmsFormatter.shortScorer(full)
-
-    private fun drawScorers(c: Canvas, segs: List<ScorerSegment>, cx: Float, baseline: Float, maxWidth: Float) {
+    private fun drawScorers(c: Canvas, segs: List<ScorerFormat.ScorerSegment>, cx: Float, baseline: Float, maxWidth: Float) {
         if (segs.isEmpty()) return
         var size = 74f
         val namePaint = textPaint(bebas, size, Color.WHITE)
         val extraPaint = textPaint(bebas, size, LIME)
         val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = GREY_GREEN }
 
-        fun lineWidth(line: List<ScorerSegment>): Float {
+        fun lineWidth(line: List<ScorerFormat.ScorerSegment>): Float {
             val gapDot = size * 0.9f
             return line.sumOf { s ->
                 (namePaint.measureText(s.name) + if (s.extra.isNotEmpty()) size * 0.12f + extraPaint.measureText(s.extra) else 0f).toDouble()

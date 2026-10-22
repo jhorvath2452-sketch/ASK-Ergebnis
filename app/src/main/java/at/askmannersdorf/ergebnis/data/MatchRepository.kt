@@ -24,37 +24,48 @@ class MatchRepository(context: Context) {
     suspend fun fetchLatest(s: AppSettings): FetchOutcome {
         val log = mutableListOf<String>()
         val raw = StringBuilder()
+        fun needsGoals(m: Match) = m.goals.isEmpty() && (m.homeGoals ?: 0) + (m.awayGoals ?: 0) > 0
 
-        if (s.lmoUrl.isNotBlank()) {
+        // 1. Ligaportal: Ergebnis + Torschützen
+        var m: Match? = if (s.ligaportalUrl.isNotBlank()) fetchFromLigaportal(s, log, raw) else {
+            log += "Ligaportal: keine Spielplan-Seite in den Einstellungen hinterlegt."
+            null
+        }
+
+        // 2. LMO + ÖFB-Spielbericht: Ersatz bzw. Ergänzung (Torschützen, Halbzeit)
+        if ((m == null || needsGoals(m) || m.halftime(s.clubKeyword) == null) && s.lmoUrl.isNotBlank()) {
             val lmo = fetchFromLmo(s, log, raw)
-            if (lmo != null) {
-                var m = lmo
-                if (m.reportUrl != null) m = enrichFromOefbReport(m, s, log, raw)
-                if (m.goals.isEmpty() && (m.homeGoals ?: 0) + (m.awayGoals ?: 0) > 0) {
-                    // Torschützen notfalls aus dem ÖFB-Widget holen, wenn es dasselbe Spiel ist
-                    val w = fetchFromOefb(s, log, raw)
-                    if (w != null && w.homeGoals == m.homeGoals && w.awayGoals == m.awayGoals && w.goals.isNotEmpty()) {
-                        m = m.copy(goals = w.goals)
-                        log += "Torschützen aus dem ÖFB-Widget übernommen."
-                    } else {
-                        log += "Torschützen nicht gefunden – bitte unten eintragen."
-                    }
-                }
-                return FetchOutcome(m, log, raw.toString())
+            if (lmo != null && (m == null || MatchParser.sameMatch(m, lmo, s.clubKeyword))) {
+                val base = m ?: lmo
+                val needMore = needsGoals(base) || base.halftime(s.clubKeyword) == null
+                val enriched = if (needMore && lmo.reportUrl != null)
+                    enrichFromReport(base.copy(reportUrl = lmo.reportUrl), s, log, raw, "ÖFB-Spielbericht") else base
+                m = enriched.copy(
+                    homeLogoUrl = base.homeLogoUrl ?: lmo.homeLogoUrl,
+                    awayLogoUrl = base.awayLogoUrl ?: lmo.awayLogoUrl,
+                    date = base.date.ifBlank { lmo.date },
+                    source = if (m == null) "LMO" else base.source,
+                )
+            } else if (lmo != null && m != null) {
+                log += "LMO zeigt ein anderes Spiel – Ligaportal-Daten werden verwendet."
             }
         }
 
-        val oefb = fetchFromOefb(s, log, raw)
-        if (oefb != null) return FetchOutcome(oefb, log, raw.toString())
-
-        if (s.ligaportalUrl.isNotBlank()) {
-            val lp = fetchFromLigaportal(s, log, raw)
-            if (lp != null) return FetchOutcome(lp, log, raw.toString())
-        } else {
-            log += "Ligaportal: keine Teamseite in den Einstellungen hinterlegt."
+        // 3. ÖFB-Widget als letzte Möglichkeit
+        if (m == null || needsGoals(m)) {
+            val w = fetchFromOefb(s, log, raw)
+            if (m == null) m = w
+            else if (w != null && MatchParser.sameMatch(m, w, s.clubKeyword) && w.goals.isNotEmpty()) {
+                m = m.copy(goals = w.goals)
+                log += "Torschützen aus dem ÖFB-Widget übernommen."
+            }
         }
-        log += "Kein Ergebnis gefunden – bitte Daten unten von Hand eintragen."
-        return FetchOutcome(null, log, raw.toString())
+
+        when {
+            m == null -> log += "Kein Ergebnis gefunden – bitte Daten unten von Hand eintragen."
+            needsGoals(m) -> log += "Torschützen nicht gefunden – bitte unten eintragen."
+        }
+        return FetchOutcome(m, log, raw.toString())
     }
 
     // ── 1. LMO ─────────────────────────────────────────────────────
@@ -104,33 +115,35 @@ class MatchRepository(context: Context) {
         return null
     }
 
-    private suspend fun enrichFromOefbReport(
-        m: Match, s: AppSettings, log: MutableList<String>, raw: StringBuilder,
+    private suspend fun enrichFromReport(
+        m: Match, s: AppSettings, log: MutableList<String>, raw: StringBuilder, label: String,
     ): Match {
         val total = (m.homeGoals ?: 0) + (m.awayGoals ?: 0)
         var best: Match = m
-        // Die ÖFB-Seite hat einen Browser-Check (Anubis), den die WebView selbst löst.
+        val host = runCatching { java.net.URI(m.reportUrl!!).host.removePrefix("www.") }.getOrNull().orEmpty()
+        // ÖFB hat einen Browser-Check (Anubis), den die WebView selbst löst; Ligaportal lädt per JavaScript nach.
         val r = extractor.load(url = m.reportUrl, timeoutMs = 35_000) { snap ->
-            if (!snap.url.contains("oefb.at") || snap.text.length < 300) return@load false
+            if (!snap.url.contains(host) || snap.text.length < 300) return@load false
             if (snap.text.contains("Anubis") || snap.text.contains("Making sure you're not a bot", true)) return@load false
             val e = MatchParser.enrichFromReport(snap.text, m, s.clubKeyword)
-            if (e.goals.size == total && (e.halfHome != null || total == 0)) { best = e; true }
+            if (e.goals.size == total && e.halftime(s.clubKeyword) != null) { best = e; true }
             else { if (e.goals.isNotEmpty() || e.halfHome != null) best = e; false }
         }
-        val snap = r.accepted ?: r.all.filter { it.url.contains("oefb.at") }.maxByOrNull { it.text.length }
-        snap?.let { raw.append("── ÖFB-Spielbericht (").append(it.url).append(") ──\n").append(it.text.take(5000)).append("\n\n") }
+        val snap = r.accepted ?: r.all.filter { it.url.contains(host) }.maxByOrNull { it.text.length }
+        snap?.let { raw.append("── $label (").append(it.url).append(") ──\n").append(it.text.take(5000)).append("\n\n") }
 
         if (best.goals.isEmpty() && snap != null && total > 0) {
             // Zweiter Versuch mit dem allgemeinen Parser (Torschützen ohne Zwischenstand)
-            MatchParser.parse(snap.text, s.clubKeyword)?.takeIf { it.goals.isNotEmpty() }?.let {
+            MatchParser.parse(snap.text, s.clubKeyword)
+                ?.takeIf { it.goals.isNotEmpty() && MatchParser.sameMatch(it, m, s.clubKeyword) }?.let {
                 best = best.copy(goals = it.goals)
             }
         }
         log += when {
-            snap == null -> "ÖFB-Spielbericht: nicht geladen."
-            best.goals.size == total && best.halfHome != null -> "ÖFB-Spielbericht: Halbzeit und Torfolge gefunden."
-            best.goals.isNotEmpty() -> "ÖFB-Spielbericht: Tore teilweise erkannt – bitte prüfen."
-            else -> "ÖFB-Spielbericht: geladen, aber Tore nicht erkannt."
+            snap == null -> "$label: nicht geladen."
+            best.goals.size == total && best.halftime(s.clubKeyword) != null -> "$label: Halbzeit und Torfolge gefunden."
+            best.goals.isNotEmpty() -> "$label: Tore teilweise erkannt – bitte prüfen."
+            else -> "$label: geladen, aber Tore nicht erkannt."
         }
         return best
     }
@@ -179,47 +192,31 @@ class MatchRepository(context: Context) {
         }
     }
 
-    // ── 3. Ligaportal ──────────────────────────────────────────────
+    // ── Ligaportal ─────────────────────────────────────────────────
 
     private suspend fun fetchFromLigaportal(s: AppSettings, log: MutableList<String>, raw: StringBuilder): Match? {
-        var parsed: Match? = null
-        var teamSnap: PageSnapshot? = null
-        val r1 = extractor.load(url = s.ligaportalUrl) { snap ->
+        // Spielplan lädt per JavaScript nach -> warten, bis ein gespieltes Spiel erkennbar ist
+        var found: Match? = null
+        val r = extractor.load(url = s.ligaportalUrl, timeoutMs = 30_000) { snap ->
             if (!snap.url.contains("ligaportal")) return@load false
-            teamSnap = snap
-            val m = MatchParser.parse(snap.text, s.clubKeyword)
-            if (m != null && m.isComplete) { parsed = m; true } else false
+            val m = MatchParser.latestPlayed(snap, s.clubKeyword)
+            if (m != null) { found = m; true } else false
         }
-        r1.error?.let { log += "Ligaportal: $it"; return null }
-        val snap = teamSnap ?: r1.all.maxByOrNull { it.text.length }
-        snap?.let { raw.append("── Ligaportal Teamseite ──\n").append(it.text.take(4000)).append("\n\n") }
-        val base = parsed ?: run {
-            log += "Ligaportal: Teamseite geladen, aber kein Ergebnis erkannt."
+        r.error?.let { log += "Ligaportal: $it"; return null }
+        val snap = r.accepted ?: r.all.filter { it.url.contains("ligaportal") }.maxByOrNull { it.text.length }
+        snap?.let { raw.append("── Ligaportal Spielplan (").append(it.url).append(") ──\n").append(it.text.take(4000)).append("\n\n") }
+        val base = found ?: snap?.let { MatchParser.latestPlayed(it, s.clubKeyword) }
+        if (base == null) {
+            log += if (snap == null) "Ligaportal: Seite nicht erreichbar." else "Ligaportal: Spielplan geladen, aber kein Ergebnis erkannt."
             return null
         }
-
-        val opponentToken = base.opponent(s.clubKeyword).lowercase().split(" ").filter { it.length >= 4 }
-        val reportLink = snap?.links?.firstOrNull { l ->
-            val h = l.href.lowercase()
-            (h.contains("spielbericht") || h.contains("/spiel/") || h.contains("match")) &&
-                (opponentToken.any { h.contains(it) || l.text.lowercase().contains(it) })
-        } ?: snap?.links?.firstOrNull { it.href.lowercase().contains("spielbericht") }
-
-        var detailed: Match? = null
-        if (reportLink != null) {
-            val r2 = extractor.load(url = reportLink.href, timeoutMs = 20_000) { rs ->
-                val m = MatchParser.parse(rs.text, s.clubKeyword)
-                if (m != null && m.isComplete && m.goals.isNotEmpty()) {
-                    val (hl, al) = MatchParser.findLogos(rs, m.homeTeam, m.awayTeam)
-                    detailed = m.copy(homeLogoUrl = hl, awayLogoUrl = al); true
-                } else false
-            }
-            r2.all.maxByOrNull { it.text.length }?.let {
-                raw.append("── Ligaportal Spielbericht ──\n").append(it.text.take(4000)).append("\n\n")
-            }
+        log += "Ligaportal: ${base.date.ifBlank { "letztes Spiel" }} – ${base.homeTeam} ${base.homeGoals}:${base.awayGoals} ${base.awayTeam}"
+        if (base.reportUrl == null) {
+            log += "Ligaportal: kein Link zum Spiel gefunden."
+            return base
         }
-        log += if (detailed != null) "Ligaportal: Ergebnis und Torschützen gefunden."
-        else "Ligaportal: Ergebnis gefunden, Torschützen bitte prüfen."
-        return (detailed ?: base).copy(source = "Ligaportal")
+        val total = (base.homeGoals ?: 0) + (base.awayGoals ?: 0)
+        if (total == 0) return base
+        return enrichFromReport(base, s, log, raw, "Ligaportal-Ticker")
     }
 }

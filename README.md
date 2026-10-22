@@ -15,7 +15,8 @@ Android-App für den ASK Mannersdorf: Ergebnis des letzten Spiels abrufen, Ergeb
 |---|---|
 | Esendex Benutzername / Passwort | Deine Zugangsdaten von app.esendex.de |
 | Absender | Name, der beim Empfänger erscheint (max. 11 Zeichen, nur bei Qualität N) |
-| LMO-Ligaseite | ist vorausgefüllt: `https://askmannersdorf.at/LMO_2026/liga.php?id=1` (Hauptquelle) |
+| Ligaportal-Spielplan | ist vorausgefüllt: `https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/spielplan` (Hauptquelle: Ergebnis + Torschützen) |
+| LMO-Ligaseite | ist vorausgefüllt: `https://askmannersdorf.at/LMO_2026/liga.php?id=1` (Ergänzung/Ersatz) |
 | Eigener Kurzname in der SMS | `ASK` |
 | ÖFB-Widget-Schlüssel | ist vorausgefüllt: `e19268845f` |
 | Vereins-Homepage | Adresse der Seite, auf der das ÖFB-Widget eingebunden ist (z. B. `https://www.askmannersdorf.at`). Das ÖFB prüft diese Domain. |
@@ -23,12 +24,13 @@ Android-App für den ASK Mannersdorf: Ergebnis des letzten Spiels abrufen, Ergeb
 
 ## Ablauf nach dem Match
 
-1. **Ergebnis abrufen** – LMO (letzter gespielter Spieltag) + verlinkter ÖFB-Spielbericht für Halbzeit und Torfolge; Ersatz: ÖFB-Widget, dann Ligaportal. Alles bleibt von Hand korrigierbar (Teams, Halbzeit, Tore in Reihenfolge, Haken = Tor für ASK).
+1. **Ergebnis abrufen** – Ligaportal-Spielplan (neuestes gespieltes Spiel) + Liveticker für die Torschützen; Ergänzung/Ersatz: LMO + ÖFB-Spielbericht, dann ÖFB-Widget. Alles bleibt von Hand korrigierbar (Teams, Halbzeit, Tore in Reihenfolge, Haken = Tor für ASK).
 2. **SMS** – wird automatisch nach Vereinsmuster erstellt, z. B.
    `Weissenbach - ASK: 1-4 (1-2); 0:1 Srok, 0:2 Sejdini, 1:2, 1:3 Srok, 1:4 Özel  U23: 4-0`
    (nur eigene Torschützen mit Namen, U23 von Hand eintragen). Text kann frei geändert werden; „Text neu erzeugen“ stellt das Muster wieder her. Esendex-Gruppe wählen, senden. Mit „Testnummer“ zuerst an dich selbst schicken.
 3. **Flyer** – Schalter an, Mannschaftsfoto wählen, Format wählen (Beitrag 4:5 oder Status/Story 9:16).
-   **Meta Business Suite** übergibt Flyer + Beitragstext an die Business-Suite-App – dort in einem Schritt auf Facebook und Instagram posten (Beitrag oder Story). Der Beitragstext liegt zusätzlich in der Zwischenablage.
+   **Meta Business Suite** legt den Flyer in die Galerie, kopiert den Beitragstext und öffnet die Business-Suite-App – dort „Beitrag“ oder „Story“ erstellen, neuestes Foto wählen, Text einfügen, auf Facebook + Instagram posten.
+   Torschützen am Flyer mit Minuten, z. B. „SROK 8., 85.“
    Außerdem: WhatsApp (Status) / Instagram / Facebook / In Galerie speichern.
    Titel automatisch: HEIMSIEG! / AUSWÄRTSSIEG! / UNENTSCHIEDEN! / NIEDERLAGE.
 

@@ -149,7 +149,7 @@ private fun MatchSection(vm: AppViewModel) {
                 CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
                 Text("Wird abgefragt …")
-            } else Text("Ergebnis abrufen (LMO / ÖFB)")
+            } else Text("Ergebnis abrufen (Ligaportal / LMO)")
         }
         vm.fetchLog.forEach { Text("• $it", fontSize = 13.sp, color = Color.DarkGray) }
 
@@ -310,7 +310,7 @@ private fun FlyerSection(vm: AppViewModel, activity: ComponentActivity) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(vm.showMinutes, { vm.showMinutes = it; vm.regenerateFlyer() })
-            Text("Minuten statt „2×“ anzeigen")
+            Text("Minuten anzeigen (z. B. „Srok 8., 85.“)")
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FlyerFormat.entries.forEach { f ->
@@ -381,10 +381,10 @@ private fun SettingsScreen(initial: AppSettings, onSave: (AppSettings) -> Unit) 
             Field("API-Adresse", s.esendexBaseUrl) { s = s.copy(esendexBaseUrl = it) }
         }
         Section("Spieldaten") {
-            Field("LMO-Ligaseite (Hauptquelle)", s.lmoUrl) { s = s.copy(lmoUrl = it) }
+            Field("Ligaportal-Spielplan (Hauptquelle)", s.ligaportalUrl) { s = s.copy(ligaportalUrl = it) }
+            Field("LMO-Ligaseite (Ergänzung/Ersatz)", s.lmoUrl) { s = s.copy(lmoUrl = it) }
             Field("ÖFB-Widget-Schlüssel", s.oefbWidgetKey) { s = s.copy(oefbWidgetKey = it) }
             Field("Vereins-Homepage (wo das Widget eingebunden ist)", s.oefbEmbedOrigin) { s = s.copy(oefbEmbedOrigin = it) }
-            Field("Ligaportal-Teamseite (Ersatzquelle)", s.ligaportalUrl) { s = s.copy(ligaportalUrl = it) }
             Field("Vereinsname erkennen an", s.clubKeyword) { s = s.copy(clubKeyword = it) }
             Field("Eigener Kurzname in der SMS", s.smsShortName) { s = s.copy(smsShortName = it) }
         }
