@@ -52,6 +52,12 @@ class EsendexClient(private val s: AppSettings) {
                     else "Esendex-Login fehlgeschlagen (HTTP ${r.code}): ${body.take(200)}"
                 )
             }
+            if (body.startsWith("<") || body.contains("<html", ignoreCase = true)) {
+                throw EsendexException(
+                    "Esendex: Unter der eingetragenen API-Adresse antwortet die Webseite des Portals, " +
+                        "nicht die SMS-Schnittstelle. Bitte die API-Adresse in den Einstellungen prüfen."
+                )
+            }
             val parts = body.split(";")
             if (parts.size < 2) throw EsendexException("Unerwartete Antwort beim Login: ${body.take(200)}")
             userKey = parts[0].trim(); sessionKey = parts[1].trim()
