@@ -194,7 +194,61 @@ class MatchRepository(context: Context) {
 
     // ── Ligaportal ─────────────────────────────────────────────────
 
+    private val http = okhttp3.OkHttpClient.Builder()
+        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .callTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+        .followRedirects(true)
+        .build()
+
+    /** HTML wie ein normaler Browser abrufen (wie der LMO-Import: User-Agent + Accept-Header). */
+    private suspend fun fetchHtml(url: String): String? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val req = okhttp3.Request.Builder().url(url)
+                .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36")
+                .header("Accept", "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "de-AT,de;q=0.9")
+                .build()
+            http.newCall(req).execute().use { r -> if (r.isSuccessful) r.body?.string() else null }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private suspend fun fetchFromLigaportal(s: AppSettings, log: MutableList<String>, raw: StringBuilder): Match? {
+        // Weg 1: Spielplan-HTML direkt lesen ("Runde N"-Abschnitte, Ergebnis "1:4 (1:2)")
+        val html = fetchHtml(s.ligaportalUrl)
+        if (html != null) {
+            val games = LigaportalHtml.parseSchedule(html)
+            val g = LigaportalHtml.latestFinished(games, s.clubKeyword)
+            raw.append("── Ligaportal Spielplan (HTML, ").append(games.size).append(" Runden erkannt) ──\n")
+            games.takeLast(6).forEach {
+                raw.append("Runde ${it.round}: ${it.home.name} – ${it.away.name} ")
+                    .append(if (it.isFinished) "${it.homeGoals}:${it.awayGoals} (${it.halfHome}:${it.halfAway})" else "offen")
+                    .append(it.matchUrl?.let { u -> "  [$u]" } ?: "").append("\n")
+            }
+            raw.append("\n")
+            if (g != null) {
+                val base = LigaportalHtml.toMatch(g)
+                log += "Ligaportal: Runde ${g.round} – ${base.homeTeam} ${base.homeGoals}:${base.awayGoals} (${base.halfHome}:${base.halfAway}) ${base.awayTeam}"
+                val total = (base.homeGoals ?: 0) + (base.awayGoals ?: 0)
+                if (total == 0) return base
+                if (base.reportUrl == null) {
+                    log += "Ligaportal: kein Link zum Spiel im Spielplan – Torschützen über LMO/ÖFB."
+                    return base
+                }
+                return enrichFromReport(base, s, log, raw, "Ligaportal-Ticker")
+            }
+            log += if (games.isEmpty()) "Ligaportal: HTML geladen, aber keine Runden erkannt – versuche Browser-Ansicht."
+            else "Ligaportal: noch kein beendetes Spiel im Spielplan."
+            if (games.isNotEmpty()) return null
+        } else {
+            log += "Ligaportal: direkter Abruf fehlgeschlagen – versuche Browser-Ansicht."
+        }
+        return fetchFromLigaportalRendered(s, log, raw)
+    }
+
+    /** Weg 2: Seite in der unsichtbaren WebView laden (falls der direkte Abruf nicht klappt). */
+    private suspend fun fetchFromLigaportalRendered(s: AppSettings, log: MutableList<String>, raw: StringBuilder): Match? {
         // Spielplan lädt per JavaScript nach -> warten, bis ein gespieltes Spiel erkennbar ist
         var found: Match? = null
         val r = extractor.load(url = s.ligaportalUrl, timeoutMs = 30_000) { snap ->

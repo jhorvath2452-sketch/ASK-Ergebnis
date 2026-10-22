@@ -24,7 +24,7 @@ Android-App für den ASK Mannersdorf: Ergebnis des letzten Spiels abrufen, Ergeb
 
 ## Ablauf nach dem Match
 
-1. **Ergebnis abrufen** – Ligaportal-Spielplan (neuestes gespieltes Spiel) + Liveticker für die Torschützen; Ergänzung/Ersatz: LMO + ÖFB-Spielbericht, dann ÖFB-Widget. Alles bleibt von Hand korrigierbar (Teams, Halbzeit, Tore in Reihenfolge, Haken = Tor für ASK).
+1. **Ergebnis abrufen** – Ligaportal-Spielplan direkt als HTML (neueste „Runde N“ mit Endstand + Halbzeit, z. B. „1:4 (1:2)“; Vereinsnamen aus dem Logo-alt) + Liveticker für die Torschützen; Ergänzung/Ersatz: LMO + ÖFB-Spielbericht, dann ÖFB-Widget. Alles bleibt von Hand korrigierbar (Teams, Halbzeit, Tore in Reihenfolge, Haken = Tor für ASK).
 2. **SMS** – wird automatisch nach Vereinsmuster erstellt, z. B.
    `Weissenbach - ASK: 1-4 (1-2); 0:1 Srok, 0:2 Sejdini, 1:2, 1:3 Srok, 1:4 Özel  U23: 4-0`
    (nur eigene Torschützen mit Namen, U23 von Hand eintragen). Text kann frei geändert werden; „Text neu erzeugen“ stellt das Muster wieder her. Esendex-Gruppe wählen, senden. Mit „Testnummer“ zuerst an dich selbst schicken.
