@@ -38,9 +38,10 @@ object PhotoPlacement {
         var s = min(sCover, sFaces)
 
         // Kann das Foto das Band füllen, ohne Gesichter in den Text zu schieben?
+        // ty-Grenzen: Gesichter oben >= safeTop, unten <= safeBot; Foto deckt Band ab
         fun covers(sc: Float): Boolean {
-            val lo = max(safeBot - uy1 * sc, bandBot - ph * sc)
-            val hi = min(safeTop - uy0 * sc, bandTop)
+            val lo = max(safeTop - uy0 * sc, bandBot - ph * sc)
+            val hi = min(safeBot - uy1 * sc, bandTop)
             return lo <= hi
         }
         if (s >= sCover && !covers(s)) {
@@ -58,11 +59,11 @@ object PhotoPlacement {
         }
         val ty = fit(
             (safeTop + safeBot) / 2f - (uy0 + uy1) / 2f * s,
-            safeBot - uy1 * s, safeTop - uy0 * s, bandBot - ph * s, bandTop,
+            safeTop - uy0 * s, safeBot - uy1 * s, bandBot - ph * s, bandTop,
         )
         val tx = fit(
             (w - pw * s) / 2f,
-            w - margin - ux1 * s, margin - ux0 * s, w - pw * s, 0f,
+            margin - ux0 * s, w - margin - ux1 * s, w - pw * s, 0f,
         )
         return Placement(s, tx, ty)
     }
