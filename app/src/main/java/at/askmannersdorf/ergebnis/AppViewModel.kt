@@ -53,6 +53,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // Flyer
     var flyerEnabled by mutableStateOf(true)
     var photo by mutableStateOf<Bitmap?>(null); private set
+    /** Erkannte Gesichter im Foto – damit sie am Flyer nicht vom Text verdeckt werden. */
+    private var photoFaces: List<at.askmannersdorf.ergebnis.flyer.PhotoPlacement.Box> = emptyList()
     var opponentLogo by mutableStateOf<Bitmap?>(null); private set
     var showMinutes by mutableStateOf(true)
     var format by mutableStateOf(FlyerFormat.FEED)
@@ -217,8 +219,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // ── Flyer ──────────────────────────────────────────────────────
 
     fun setPhoto(uri: Uri) = viewModelScope.launch {
-        photo = FlyerShare.loadImage(getApplication(), uri)
-        if (photo == null) flyerStatus = "Foto konnte nicht geladen werden."
+        val bmp = FlyerShare.loadImage(getApplication(), uri)
+        photo = bmp
+        photoFaces = emptyList()
+        if (bmp == null) {
+            flyerStatus = "Foto konnte nicht geladen werden."
+        } else {
+            flyerStatus = "Suche Gesichter …"
+            photoFaces = withContext(Dispatchers.Default) { at.askmannersdorf.ergebnis.flyer.FaceFinder.find(bmp) }
+            flyerStatus = if (photoFaces.isEmpty())
+                "Keine Gesichter erkannt – Foto wird mittig platziert."
+            else "${photoFaces.size} Gesichter erkannt – sie bleiben frei vom Text."
+        }
         regenerateFlyer()
     }
 
@@ -240,6 +252,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             homeLabel = if (match.isAskHome(settings.clubKeyword)) ownShort() else oppShortLabel(),
             awayLabel = if (match.isAskHome(settings.clubKeyword)) oppShortLabel() else ownShort(),
             ownShort = ownShort(),
+            photoFaces = photoFaces,
             photo = photo,
             opponentLogo = opponentLogo,
             showMinutes = showMinutes,

@@ -47,6 +47,8 @@ data class FlyerInput(
     val awayLabel: String,
     /** Eigener Kurzname für "TORE FÜR …". */
     val ownShort: String,
+    /** Erkannte Gesichter im Foto (Fotokoordinaten), damit sie nicht vom Text verdeckt werden. */
+    val photoFaces: List<PhotoPlacement.Box> = emptyList(),
 )
 
 /**
@@ -98,6 +100,38 @@ class FlyerRenderer(private val context: Context) {
         val outcome = m.outcome(kw)
         val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
+        // ── Layout des unteren Blocks vorab berechnen (von unten nach oben) ──
+        val tagBase = h - 40f
+        val boxBottom = h - 102f
+        val labels = ScorerFormat.labels(
+            m.sortedGoals.filter { it.forAsk && it.scorer.isNotBlank() }.map { it.scorer to it.minute }, input.showMinutes,
+        )
+        val linePaint = textPaint(fCond, 46f, Color.WHITE)
+        val sep = "  •  "
+        fun lw(line: List<String>) = line.sumOf { linePaint.measureText(it).toDouble() }.toFloat() +
+            linePaint.measureText(sep) * (line.size - 1)
+        var lines = listOf(labels)
+        while (labels.isNotEmpty() && lw(labels) > w - 160f && linePaint.textSize > 34f) linePaint.textSize -= 2f
+        if (labels.isNotEmpty() && lw(labels) > w - 160f) {
+            val mid = (labels.size + 1) / 2
+            lines = listOf(labels.take(mid), labels.drop(mid))
+            while (lines.maxOf { lw(it) } > w - 160f && linePaint.textSize > 24f) linePaint.textSize -= 2f
+        }
+        val hasBox = labels.isNotEmpty()
+        val boxH = if (hasBox) 58f + 54f * lines.size + 12f else 0f
+        val boxTop = boxBottom - boxH
+        // Ergebnis direkt über der Box (Teamnamen stehen schon bei den Logos)
+        val scoreSize = 245f
+        val digitsBase = (if (hasBox) boxTop else boxBottom) - 40f
+        val scorePaint = textPaint(fHeavy, scoreSize, Color.WHITE)
+        val bounds = Rect(); scorePaint.getTextBounds("14", 0, 2, bounds)
+        val digitsTop = digitsBase + bounds.top
+        val titleBase = digitsTop - 30f
+
+        // Titel (schräg, Pinselschrift) + Unterstrich
+        val (p1, p2) = titleParts(input)
+        val titlePaint = textPaint(fBrush, 150f, Color.WHITE)
+        while (titlePaint.measureText(p1 + p2) > w - 70f && titlePaint.textSize > 60f) titlePaint.textSize -= 4f
         // ── Hintergrund ──────────────────────────────────────────────
         c.drawColor(BG)
         p.shader = LinearGradient(0f, 0f, 0f, h,
@@ -107,23 +141,16 @@ class FlyerRenderer(private val context: Context) {
         glow(c, -120f + 450f, h - 620f + 450f, 450f, ACCENT, 70)
         glow(c, w - 780f + 450f, h - 620f + 450f, 450f, ACCENT, 70)
 
-        // ── Foto als Band, oben/unten weich ausgeblendet ─────────────
+        // ── Foto: Gesichter immer im freien Bereich zwischen Logos und Titel ──
+        val logoCy = 205f
+        val box = 300f
+        val aBounds = Rect(); textPaint(fBrush, titlePaint.textSize, Color.WHITE).getTextBounds("A", 0, 1, aBounds)
+        // Titel ist um 4° gedreht: an der höheren Seite ~38 px höher; plus Abstand
+        val safeTop = logoCy + box / 2f + 10f
+        val safeBot = titleBase + aBounds.top - 38f - 8f
         val bandTop = 200f
-        val bandBot = h - 420f
-        input.photo?.let { photo ->
-            val layer = c.saveLayer(0f, bandTop, w, bandBot, null)
-            drawCenterCrop(c, photo, RectF(0f, bandTop, w, bandBot), 0.4f)
-            val fadeT = 150f / (bandBot - bandTop)
-            val fadeB = 1f - 260f / (bandBot - bandTop)
-            val mask = Paint().apply {
-                xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
-                shader = LinearGradient(0f, bandTop, 0f, bandBot,
-                    intArrayOf(Color.TRANSPARENT, withAlpha(Color.BLACK, 120), Color.BLACK, Color.BLACK, withAlpha(Color.BLACK, 110), Color.TRANSPARENT),
-                    floatArrayOf(0f, fadeT * 0.55f, fadeT, fadeB, fadeB + (1 - fadeB) * 0.5f, 1f), Shader.TileMode.CLAMP)
-            }
-            c.drawRect(0f, bandTop, w, bandBot, mask)
-            c.restoreToCount(layer)
-        }
+        val bandBot = digitsTop + 20f
+        input.photo?.let { photo -> drawPhoto(c, photo, input.photoFaces, w, bandTop, bandBot, safeTop, safeBot) }
         // Vignette links/rechts
         val vig = withAlpha(Color.rgb(3, 10, 6), 120)
         p.shader = LinearGradient(0f, 0f, 160f, 0f, vig, Color.TRANSPARENT, Shader.TileMode.CLAMP)
@@ -158,8 +185,6 @@ class FlyerRenderer(private val context: Context) {
         }
 
         // ── Logos + VS ───────────────────────────────────────────────
-        val logoCy = 205f
-        val box = 300f
         val homeLogo = if (askHome) askLogo else input.opponentLogo
         val awayLogo = if (askHome) input.opponentLogo else askLogo
         drawLogo(c, homeLogo, 290f, logoCy, box, m.homeTeam)
@@ -167,38 +192,6 @@ class FlyerRenderer(private val context: Context) {
         brushStroke(c, rnd, w / 2 + 40f, logoCy - 120f, w / 2 - 40f, logoCy + 110f, 9f, ACCENT, 200)
         textBlock(c, rnd, "VS", w / 2, logoCy + 4f + 46f, fBrush, 140f, Color.WHITE, Paint.Align.CENTER, specks = 0, shadow = true, dry = 60)
 
-        // ── Unterer Block, von unten nach oben ───────────────────────
-        val tagBase = h - 40f
-        val boxBottom = h - 102f
-        val labels = ScorerFormat.labels(
-            m.sortedGoals.filter { it.forAsk && it.scorer.isNotBlank() }.map { it.scorer to it.minute }, input.showMinutes,
-        )
-        val linePaint = textPaint(fCond, 46f, Color.WHITE)
-        val sep = "  •  "
-        fun lw(line: List<String>) = line.sumOf { linePaint.measureText(it).toDouble() }.toFloat() +
-            linePaint.measureText(sep) * (line.size - 1)
-        var lines = listOf(labels)
-        while (labels.isNotEmpty() && lw(labels) > w - 160f && linePaint.textSize > 34f) linePaint.textSize -= 2f
-        if (labels.isNotEmpty() && lw(labels) > w - 160f) {
-            val mid = (labels.size + 1) / 2
-            lines = listOf(labels.take(mid), labels.drop(mid))
-            while (lines.maxOf { lw(it) } > w - 160f && linePaint.textSize > 24f) linePaint.textSize -= 2f
-        }
-        val hasBox = labels.isNotEmpty()
-        val boxH = if (hasBox) 58f + 54f * lines.size + 12f else 0f
-        val boxTop = boxBottom - boxH
-        // Ergebnis direkt über der Box (Teamnamen stehen schon bei den Logos)
-        val scoreSize = 245f
-        val digitsBase = (if (hasBox) boxTop else boxBottom) - 40f
-        val scorePaint = textPaint(fHeavy, scoreSize, Color.WHITE)
-        val bounds = Rect(); scorePaint.getTextBounds("14", 0, 2, bounds)
-        val digitsTop = digitsBase + bounds.top
-        val titleBase = digitsTop - 30f
-
-        // Titel (schräg, Pinselschrift) + Unterstrich
-        val (p1, p2) = titleParts(input)
-        val titlePaint = textPaint(fBrush, 150f, Color.WHITE)
-        while (titlePaint.measureText(p1 + p2) > w - 70f && titlePaint.textSize > 60f) titlePaint.textSize -= 4f
         val tx = (w - titlePaint.measureText(p1 + p2)) / 2f
         c.save()
         c.rotate(-4f, w / 2f, titleBase)
@@ -387,6 +380,65 @@ class FlyerRenderer(private val context: Context) {
                 d += 4f
             }
         } while (pm.nextContour())
+    }
+
+    /**
+     * Zeichnet das Foto so, dass alle Gesichter zwischen [safeTop] und [safeBot] liegen.
+     * Darunter liegt eine weichgezeichnete, abgedunkelte Kopie, die das ganze Band füllt
+     * (wichtig, wenn das scharfe Foto das Band nicht ganz abdecken kann, z. B. im Story-Format).
+     */
+    private fun drawPhoto(
+        c: Canvas, photo: Bitmap, faces: List<PhotoPlacement.Box>, w: Float,
+        bandTop: Float, bandBot: Float, safeTop: Float, safeBot: Float,
+    ) {
+        val bandH = bandBot - bandTop
+        // 1) Hintergrund: stark verkleinert und wieder vergrößert = weich
+        run {
+            val small = Bitmap.createScaledBitmap(photo, max(1, photo.width / 24), max(1, photo.height / 24), true)
+            val layer = c.saveLayer(0f, bandTop, w, bandBot, null)
+            drawCenterCrop(c, small, RectF(0f, bandTop, w, bandBot), 0.4f)
+            c.drawRect(0f, bandTop, w, bandBot, Paint().apply { color = withAlpha(Color.rgb(5, 18, 10), 175) })
+            val mask = Paint().apply {
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+                shader = LinearGradient(0f, bandTop, 0f, bandBot,
+                    intArrayOf(Color.TRANSPARENT, Color.BLACK, Color.BLACK, Color.TRANSPARENT),
+                    floatArrayOf(0f, min(0.45f, 150f / bandH), max(0.55f, 1f - 300f / bandH), 1f), Shader.TileMode.CLAMP)
+            }
+            c.drawRect(0f, bandTop, w, bandBot, mask)
+            c.restoreToCount(layer)
+            small.recycle()
+        }
+        // 2) scharfes Foto, gesichtsbewusst platziert
+        val pl = PhotoPlacement.place(photo.width.toFloat(), photo.height.toFloat(), faces, w, bandTop, bandBot, safeTop, safeBot)
+        val pw = photo.width * pl.scale; val ph = photo.height * pl.scale
+        val visTop = max(bandTop, pl.ty); val visBot = min(bandBot, pl.ty + ph)
+        if (visBot - visTop < 10f) return
+        val fTop = faces.minOfOrNull { it.y0 * pl.scale + pl.ty } ?: (visTop + 150f)
+        val fBot = faces.maxOfOrNull { it.y1 * pl.scale + pl.ty } ?: (visBot - 260f)
+        val fadeT = (fTop - visTop).coerceIn(30f, 150f)
+        val fadeBStart = min(max(fBot, visBot - 260f), visBot - 120f).coerceAtLeast(visTop + fadeT)
+        val layer = c.saveLayer(0f, visTop, w, visBot, null)
+        c.drawBitmap(photo, null, RectF(pl.tx, pl.ty, pl.tx + pw, pl.ty + ph), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+        val vh = visBot - visTop
+        val vMask = Paint().apply {
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+            shader = LinearGradient(0f, visTop, 0f, visBot,
+                intArrayOf(Color.TRANSPARENT, withAlpha(Color.BLACK, 120), Color.BLACK, Color.BLACK, withAlpha(Color.BLACK, 110), Color.TRANSPARENT),
+                floatArrayOf(0f, fadeT * 0.55f / vh, fadeT / vh, (fadeBStart - visTop) / vh,
+                    ((fadeBStart - visTop) / vh + 1f) / 2f, 1f), Shader.TileMode.CLAMP)
+        }
+        c.drawRect(0f, visTop, w, visBot, vMask)
+        if (pw < w) { // Foto schmäler als das Bild: Seiten weich ausblenden
+            val edge = min(80f, pw / 4f)
+            val hMask = Paint().apply {
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+                shader = LinearGradient(pl.tx, 0f, pl.tx + pw, 0f,
+                    intArrayOf(Color.TRANSPARENT, Color.BLACK, Color.BLACK, Color.TRANSPARENT),
+                    floatArrayOf(0f, edge / pw, 1f - edge / pw, 1f), Shader.TileMode.CLAMP)
+            }
+            c.drawRect(0f, visTop, w, visBot, hMask)
+        }
+        c.restoreToCount(layer)
     }
 
     private fun drawCenterCrop(c: Canvas, src: Bitmap, dst: RectF, focusY: Float) {
