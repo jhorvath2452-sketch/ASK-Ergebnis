@@ -58,6 +58,35 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var format by mutableStateOf(FlyerFormat.FEED)
     var flyer by mutableStateOf<Bitmap?>(null); private set
     var flyerStatus by mutableStateOf<String?>(null); private set
+    /** Text für den Beitrag (Facebook/Instagram), wird beim Teilen mitgegeben und in die Zwischenablage kopiert. */
+    var postText by mutableStateOf(""); private set
+    var postEdited by mutableStateOf(false); private set
+
+    fun onPostTextChanged(t: String) { postText = t; postEdited = true }
+    fun regeneratePost() { postEdited = false; refreshPost() }
+
+    private fun refreshPost() {
+        if (postEdited || !match.isComplete) return
+        val m = match
+        val kw = settings.clubKeyword
+        val head = when (m.outcome(kw)) {
+            at.askmannersdorf.ergebnis.model.Outcome.WIN -> if (m.isAskHome(kw)) "HEIMSIEG! 💚" else "AUSWÄRTSSIEG! 💚"
+            at.askmannersdorf.ergebnis.model.Outcome.DRAW -> "Punkteteilung."
+            at.askmannersdorf.ergebnis.model.Outcome.LOSS -> "Leider nichts zu holen – Kopf hoch!"
+            null -> "Endstand"
+        }
+        val scorers = m.sortedGoals.filter { it.forAsk && it.scorer.isNotBlank() }
+            .groupBy { SmsFormatter.shortScorer(it.scorer) }
+            .map { (n, l) -> if (l.size > 1) "$n (${l.size})" else n }
+        postText = buildString {
+            append(head).append("\n")
+            append("${m.homeTeam} – ${m.awayTeam} ${m.homeGoals}:${m.awayGoals}")
+            m.halftime(kw)?.let { (h, a) -> append(" ($h:$a)") }
+            if (scorers.isNotEmpty()) append("\n⚽ ").append(scorers.joinToString(", "))
+            if (u23Result.isNotBlank()) append("\nU23: ").append(SmsFormatter.normalizeResult(u23Result))
+            append("\n\n").append(settings.hashtag)
+        }
+    }
 
     fun saveSettings(s: AppSettings) {
         store.save(s); settings = store.load()
@@ -81,6 +110,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     match = m
                     opponentShort = SmsFormatter.shortTeamName(m.opponent(settings.clubKeyword))
                     smsEdited = false
+                    postEdited = false
                     refreshSms()
                     opponentLogo = null
                     val oppUrl = if (m.isAskHome(settings.clubKeyword)) m.awayLogoUrl else m.homeLogoUrl
@@ -126,6 +156,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun regenerateSms() { smsEdited = false; refreshSms() }
 
     private fun refreshSms() {
+        refreshPost()
         if (smsEdited) return
         smsText = SmsFormatter.build(
             match, settings.clubKeyword, settings.smsShortName,
@@ -221,8 +252,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val bmp = flyer ?: return
         viewModelScope.launch {
             val uri = FlyerShare.toShareUri(activity, bmp, fileName())
-            if (!FlyerShare.share(activity, uri, target)) {
-                flyerStatus = "${target.label} ist auf diesem Handy nicht installiert."
+            val caption = postText.takeIf { it.isNotBlank() && target != ShareTarget.WHATSAPP }
+            if (caption != null) {
+                val cm = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("Beitragstext", caption))
+            }
+            val ok = FlyerShare.share(activity, uri, target, caption)
+            flyerStatus = when {
+                !ok -> "${target.label} wurde nicht gefunden – bitte im Teilen-Menü auswählen."
+                caption != null -> "Beitragstext ist kopiert – falls er fehlt, einfach einfügen."
+                else -> null
             }
         }
     }

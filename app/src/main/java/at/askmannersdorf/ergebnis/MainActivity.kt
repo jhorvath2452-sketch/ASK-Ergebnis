@@ -335,6 +335,16 @@ private fun FlyerSection(vm: AppViewModel, activity: ComponentActivity) {
                 modifier = Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth,
             )
             if (vm.photo == null) Text("Tipp: Mit Mannschaftsfoto sieht der Flyer viel besser aus.", fontSize = 13.sp, color = Color.Gray)
+            OutlinedTextField(
+                vm.postText, vm::onPostTextChanged, label = { Text("Beitragstext (Facebook / Instagram)") },
+                modifier = Modifier.fillMaxWidth(), minLines = 3,
+            )
+            if (vm.postEdited) TextButton(onClick = vm::regeneratePost) { Text("Beitragstext neu erzeugen") }
+            Button(
+                onClick = { vm.shareFlyer(activity, ShareTarget.BUSINESS_SUITE) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = AskLime, contentColor = AskGreen),
+            ) { Text("Meta Business Suite (Facebook + Instagram)", fontWeight = FontWeight.Bold) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ShareButton("WhatsApp", Modifier.weight(1f)) { vm.shareFlyer(activity, ShareTarget.WHATSAPP) }
                 ShareButton("Instagram", Modifier.weight(1f)) { vm.shareFlyer(activity, ShareTarget.INSTAGRAM) }

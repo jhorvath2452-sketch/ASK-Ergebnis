@@ -19,6 +19,8 @@ import java.io.File
 import java.io.FileOutputStream
 
 enum class ShareTarget(val label: String, val pkg: String?) {
+    /** Meta Business Suite: ein Beitrag/Story für Facebook-Seite und Instagram gleichzeitig. */
+    BUSINESS_SUITE("Business Suite", "com.facebook.pages.app"),
     WHATSAPP("WhatsApp", "com.whatsapp"),
     INSTAGRAM("Instagram", "com.instagram.android"),
     FACEBOOK("Facebook", "com.facebook.katana"),
@@ -38,11 +40,15 @@ object FlyerShare {
         FileProvider.getUriForFile(context, context.packageName + ".files", f)
     }
 
-    /** Öffnet den Teilen-Dialog bzw. direkt die gewählte App. Gibt false zurück, wenn die App fehlt. */
-    fun share(context: Context, uri: Uri, target: ShareTarget): Boolean {
+    /**
+     * Öffnet direkt die gewählte App bzw. den Teilen-Dialog.
+     * Gibt false zurück, wenn die gewählte App fehlt – dann wird der Teilen-Dialog geöffnet.
+     */
+    fun share(context: Context, uri: Uri, target: ShareTarget, caption: String? = null): Boolean {
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
+            if (!caption.isNullOrBlank()) putExtra(Intent.EXTRA_TEXT, caption)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         if (target.pkg != null) {
@@ -50,6 +56,8 @@ object FlyerShare {
             return try {
                 context.startActivity(send); true
             } catch (e: Exception) {
+                send.setPackage(null)
+                context.startActivity(Intent.createChooser(send, "Flyer teilen").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 false
             }
         }

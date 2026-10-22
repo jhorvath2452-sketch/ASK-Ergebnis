@@ -27,7 +27,9 @@ Android-App für den ASK Mannersdorf: Ergebnis des letzten Spiels abrufen, Ergeb
 2. **SMS** – wird automatisch nach Vereinsmuster erstellt, z. B.
    `Weissenbach - ASK: 1-4 (1-2); 0:1 Srok, 0:2 Sejdini, 1:2, 1:3 Srok, 1:4 Özel  U23: 4-0`
    (nur eigene Torschützen mit Namen, U23 von Hand eintragen). Text kann frei geändert werden; „Text neu erzeugen“ stellt das Muster wieder her. Esendex-Gruppe wählen, senden. Mit „Testnummer“ zuerst an dich selbst schicken.
-3. **Flyer** – Schalter an, Mannschaftsfoto wählen, Format wählen (Beitrag 4:5 oder Status/Story 9:16), dann WhatsApp / Instagram / Facebook / In Galerie speichern.
+3. **Flyer** – Schalter an, Mannschaftsfoto wählen, Format wählen (Beitrag 4:5 oder Status/Story 9:16).
+   **Meta Business Suite** übergibt Flyer + Beitragstext an die Business-Suite-App – dort in einem Schritt auf Facebook und Instagram posten (Beitrag oder Story). Der Beitragstext liegt zusätzlich in der Zwischenablage.
+   Außerdem: WhatsApp (Status) / Instagram / Facebook / In Galerie speichern.
    Titel automatisch: HEIMSIEG! / AUSWÄRTSSIEG! / UNENTSCHIEDEN! / NIEDERLAGE.
 
 ## Wenn etwas nicht erkannt wird
