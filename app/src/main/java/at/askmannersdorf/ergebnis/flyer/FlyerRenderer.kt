@@ -213,6 +213,8 @@ class FlyerRenderer(private val context: Context) {
         c: Canvas, rnd: Random, w: Float, h: Float, m: Match, kw: String, opponentLogo: Bitmap?,
         photo: Bitmap?, faces: List<PhotoPlacement.Box>,
         bandTop: Float, bandBot: Float, safeTop: Float, safeBot: Float, logoCy: Float, box: Float,
+        /** Tor-Flyer: oben komplett frei (keine Logos, kein VS, kein Flutlicht, Foto bis zum Rand) */
+        topFree: Boolean = false,
     ) {
         val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         val askHome = m.isAskHome(kw)
@@ -225,7 +227,7 @@ class FlyerRenderer(private val context: Context) {
         glow(c, -120f + 450f, h - 620f + 450f, 450f, ACCENT, 70)
         glow(c, w - 780f + 450f, h - 620f + 450f, 450f, ACCENT, 70)
 
-        photo?.let { drawPhoto(c, it, faces, w, bandTop, bandBot, safeTop, safeBot) }
+        photo?.let { drawPhoto(c, it, faces, w, bandTop, bandBot, safeTop, safeBot, topFree) }
         // Vignette links/rechts
         val vig = withAlpha(Color.rgb(3, 10, 6), 120)
         p.shader = LinearGradient(0f, 0f, 160f, 0f, vig, Color.TRANSPARENT, Shader.TileMode.CLAMP)
@@ -233,11 +235,14 @@ class FlyerRenderer(private val context: Context) {
         p.shader = LinearGradient(w, 0f, w - 160f, 0f, vig, Color.TRANSPARENT, Shader.TileMode.CLAMP)
         c.drawRect(w - 160f, 0f, w, h, p)
         // oben abdunkeln für die Logos
-        p.shader = LinearGradient(0f, 0f, 0f, 260f, withAlpha(Color.rgb(4, 14, 8), 160), Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, w, 260f, p); p.shader = null
+        if (!topFree) {
+            p.shader = LinearGradient(0f, 0f, 0f, 260f, withAlpha(Color.rgb(4, 14, 8), 160), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            c.drawRect(0f, 0f, w, 260f, p)
+        }
+        p.shader = null
 
         // ── Flutlicht oben links/rechts ──────────────────────────────
-        for (cx in floatArrayOf(60f, w - 60f)) {
+        for (cx in if (topFree) floatArrayOf() else floatArrayOf(60f, w - 60f)) {
             glow(c, cx, 20f, 380f, Color.rgb(225, 255, 230), 185)
             val sgn = if (cx < w / 2) 1f else -1f
             for ((blur, a) in listOf(22f to 255, 10f to 255, 4f to 255)) {
@@ -252,7 +257,7 @@ class FlyerRenderer(private val context: Context) {
 
         // ── Pinselstriche an den Rändern ─────────────────────────────
         for (side in 0..1) for (k in 0 until 9) {
-            val y = rnd.nextFloat(h * 0.02f, h * 0.9f)
+            val y = rnd.nextFloat(h * (if (topFree) 0.5f else 0.02f), h * 0.9f)
             val x = if (side == 0) 0f else w
             val dx = rnd.nextFloat(60f, 170f) * if (side == 0) 1 else -1
             brushStroke(c, rnd, x - dx * 0.4f, y + rnd.nextFloat(50f, 130f), x + dx, y - rnd.nextFloat(30f, 110f),
@@ -260,6 +265,7 @@ class FlyerRenderer(private val context: Context) {
         }
 
         // ── Logos + VS ───────────────────────────────────────────────
+        if (topFree) return
         val homeLogo = if (askHome) askLogo else opponentLogo
         val awayLogo = if (askHome) opponentLogo else askLogo
         drawLogo(c, homeLogo, 290f, logoCy, box, m.homeTeam)
@@ -314,12 +320,11 @@ class FlyerRenderer(private val context: Context) {
         val ab1 = Rect(); l1Paint.getTextBounds("A", 0, 1, ab1)
         val l1Top = l1Base + ab1.top
 
-        val logoCy = 205f
-        val box = 300f
-        val safeTop = logoCy + box / 2f + 10f
+        // Oben komplett frei: kein Logo/VS, Foto beginnt am oberen Rand
+        val safeTop = 40f
         val safeBot = l1Top - 38f - 8f
         drawFrame(c, rnd, w, h, m, kw, input.opponentLogo, input.photo, input.photoFaces,
-            200f, scoreTop + 10f, safeTop, safeBot, logoCy, box)
+            0f, scoreTop + 10f, safeTop, safeBot, 0f, 0f, topFree = true)
 
         // Titel: zwei Zeilen, schräg
         c.save()
@@ -506,7 +511,7 @@ class FlyerRenderer(private val context: Context) {
      */
     private fun drawPhoto(
         c: Canvas, photo: Bitmap, faces: List<PhotoPlacement.Box>, w: Float,
-        bandTop: Float, bandBot: Float, safeTop: Float, safeBot: Float,
+        bandTop: Float, bandBot: Float, safeTop: Float, safeBot: Float, topFree: Boolean = false,
     ) {
         val bandH = bandBot - bandTop
         // 1) Hintergrund: stark verkleinert und wieder vergrößert = weich
@@ -519,20 +524,22 @@ class FlyerRenderer(private val context: Context) {
                 xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
                 shader = LinearGradient(0f, bandTop, 0f, bandBot,
                     intArrayOf(Color.TRANSPARENT, Color.BLACK, Color.BLACK, Color.TRANSPARENT),
-                    floatArrayOf(0f, min(0.45f, 150f / bandH), max(0.55f, 1f - 300f / bandH), 1f), Shader.TileMode.CLAMP)
+                    floatArrayOf(0f, if (topFree) 0.001f else min(0.45f, 150f / bandH), max(0.55f, 1f - 300f / bandH), 1f), Shader.TileMode.CLAMP)
             }
             c.drawRect(0f, bandTop, w, bandBot, mask)
             c.restoreToCount(layer)
             small.recycle()
         }
         // 2) scharfes Foto, gesichtsbewusst platziert
-        val pl = PhotoPlacement.place(photo.width.toFloat(), photo.height.toFloat(), faces, w, bandTop, bandBot, safeTop, safeBot)
+        // Ohne erkanntes Gesicht: beim Tor-Flyer den oberen Teil zeigen (Kopf ist bei Spielerfotos meist oben)
+        val pl = PhotoPlacement.place(photo.width.toFloat(), photo.height.toFloat(), faces, w, bandTop, bandBot, safeTop, safeBot,
+            focusY = if (topFree) 0.12f else 0.4f)
         val pw = photo.width * pl.scale; val ph = photo.height * pl.scale
         val visTop = max(bandTop, pl.ty); val visBot = min(bandBot, pl.ty + ph)
         if (visBot - visTop < 10f) return
         val fTop = faces.minOfOrNull { it.y0 * pl.scale + pl.ty } ?: (visTop + 150f)
         val fBot = faces.maxOfOrNull { it.y1 * pl.scale + pl.ty } ?: (visBot - 260f)
-        val fadeT = (fTop - visTop).coerceIn(30f, 150f)
+        val fadeT = if (topFree) 1f else (fTop - visTop).coerceIn(30f, 150f)
         val fadeBStart = min(max(fBot, visBot - 260f), visBot - 120f).coerceAtLeast(visTop + fadeT)
         val layer = c.saveLayer(0f, visTop, w, visBot, null)
         c.drawBitmap(photo, null, RectF(pl.tx, pl.ty, pl.tx + pw, pl.ty + ph), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))

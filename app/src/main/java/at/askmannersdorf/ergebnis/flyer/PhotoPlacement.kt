@@ -26,11 +26,13 @@ object PhotoPlacement {
     fun place(
         pw: Float, ph: Float, faces: List<Box>, w: Float,
         bandTop: Float, bandBot: Float, safeTop: Float, safeBot: Float, margin: Float = 24f,
+        /** Ohne Gesichter: welcher Teil sichtbar ist (0 = oben, 0.5 = Mitte) */
+        focusY: Float = 0.4f,
     ): Placement {
         val bandH = bandBot - bandTop
         val sCover = max(w / pw, bandH / ph)
         if (faces.isEmpty() || safeBot - safeTop < 40f) {
-            return Placement(sCover, (w - pw * sCover) / 2f, bandTop - (ph * sCover - bandH) * 0.4f)
+            return Placement(sCover, (w - pw * sCover) / 2f, bandTop - (ph * sCover - bandH) * focusY)
         }
         val ux0 = faces.minOf { it.x0 }; val uy0 = faces.minOf { it.y0 }
         val ux1 = faces.maxOf { it.x1 }; val uy1 = faces.maxOf { it.y1 }

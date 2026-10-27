@@ -38,4 +38,12 @@ class PhotoPlacementTest {
         val p = PhotoPlacement.place(2160f, 980f, faces, 1080f, 200f, 960f, 365f, 755f)
         assertTrue("Foto soll ganze Breite füllen", p.tx <= 0f && p.tx + 2160f * p.scale >= 1080f)
     }
+
+    @Test fun portraitWithoutFacesShowsUpperPart() {
+        // Spielerfoto hochkant (1032×1490), Tor-Flyer: Band ab 0, kein Gesicht erkannt
+        val p = PhotoPlacement.place(1032f, 1490f, emptyList(), 1080f, 0f, 1100f, 40f, 760f, focusY = 0.12f)
+        val cropTop = -p.ty / p.scale
+        assertTrue("oben wird höchstens wenig abgeschnitten: $cropTop", cropTop < 0.12f * 1490f)
+        assertTrue(p.ty <= 0f && p.ty + 1490f * p.scale >= 1100f)
+    }
 }
