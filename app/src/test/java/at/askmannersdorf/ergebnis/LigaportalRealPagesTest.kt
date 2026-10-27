@@ -99,7 +99,8 @@ class LigaportalRealPagesTest {
 
     @Test fun tickerPartialFallbackWhenJsonBroken() {
         val html = res("ticker_himberg_ask_1271297.html")
-            .replace("\"sponsorTextAdBanner\":null", "\"sponsorTextAdBanner\":undefined")
+            // doppelter Schlüssel: wird von org.json sicher abgelehnt (ein ungültiges "undefined" dagegen nicht)
+            .replace("\"sponsorTextAdBanner\":null", "\"sponsorTextAdBanner\":null,\"sponsorTextAdBanner\":null")
         val ex = LigaportalTicker.extractWithDiag(html)
         assertNotNull(ex.diag, ex.obj)
         assertTrue(ex.diag, ex.diag.contains("einzeln"))

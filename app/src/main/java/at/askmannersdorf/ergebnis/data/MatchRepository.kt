@@ -372,7 +372,7 @@ class MatchRepository(context: Context) {
                 }
                 r is MatchParser.LmoRowResult.Played -> log += "LMO Spieltag $round: anderes Ergebnis (${r.match.homeGoals}:${r.match.awayGoals}) als im Spielplan."
                 r is MatchParser.LmoRowResult.Open -> log += "LMO Spieltag $round: Spiel dort noch ohne Ergebnis."
-                else -> log += "LMO Spieltag $round: Spiel nicht gefunden (${snap.rows.size} Tabellenzeilen gelesen)."
+                else -> log += "LMO Spieltag $round: Spiel nicht gefunden (${snap?.rows?.size ?: 0} Tabellenzeilen gelesen)."
             }
         }
         var m = base
