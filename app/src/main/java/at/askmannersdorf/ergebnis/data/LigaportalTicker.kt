@@ -28,6 +28,9 @@ object LigaportalTicker {
         val finished: Boolean,
         /** Woher die Torschützen stammen */
         val goalSource: String,
+        /** ÖFB-Spielnummer (für den ÖFB-Spielbericht als Ersatzquelle) */
+        val oefbId: String? = null,
+        val round: Int? = null,
     )
 
     /** `var initialData = {…}` aus dem HTML herausschneiden (Klammern zählen, Strings beachten). */
@@ -128,7 +131,7 @@ object LigaportalTicker {
             goals = goals,
             source = "Ligaportal-Liveticker",
         )
-        return Result(match, u23, finished, src)
+        return Result(match, u23, finished, src, obj.str("oefbId").ifBlank { null }, obj.optIntOrNull("roundNr"))
     }
 
     /** "2026-10-23T17:45:00Z" -> "23.10.2026" (Datum genügt; Zeitzone spielt dafür keine Rolle außer um Mitternacht) */

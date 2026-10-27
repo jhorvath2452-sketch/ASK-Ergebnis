@@ -258,12 +258,15 @@ class MatchRepository(context: Context) {
                 halfHome = game.halfHome, halfAway = game.halfAway, date = game.date,
                 competition = game.round?.let { "Runde $it" }.orEmpty(), source = "Ligaportal-Spielplan",
             ) else null
-            if (m != null) log += "Ergebnis aus dem Spielplan übernommen – Torschützen bitte eintragen."
-            return FetchOutcome(m, log, "")
+            if (m == null) return FetchOutcome(null, log, "")
+            log += "Ergebnis aus dem Spielplan übernommen."
+            val raw = StringBuilder()
+            val withGoals = scorersFallback(s, m, game.round, null, log, raw)
+            return FetchOutcome(withGoals, log, raw.toString())
         }
         val r = LigaportalTicker.parse(obj, s.clubKeyword)
         val m = r.match
-        val raw = buildString {
+        val raw = StringBuilder().apply {
             append("── Liveticker ($url) ──\n")
             append("${m.homeTeam} ${m.homeGoals}:${m.awayGoals} (${m.halfHome}:${m.halfAway}) ${m.awayTeam}\n")
             m.goals.forEach { append("${it.minute} ${it.scorer.ifBlank { "(Gegner)" }} ${if (it.forAsk) "ASK" else "Gegner"}\n") }
@@ -274,10 +277,54 @@ class MatchRepository(context: Context) {
             !r.finished -> log += "Liveticker: ${m.homeTeam} ${m.homeGoals}:${m.awayGoals} ${m.awayTeam} – Spiel läuft noch bzw. nicht als beendet markiert."
             else -> log += "Liveticker: ${m.homeTeam} ${m.homeGoals}:${m.awayGoals} (${m.halfHome}:${m.halfAway}) ${m.awayTeam}"
         }
-        if (m.goals.isNotEmpty()) log += "Torschützen aus ${r.goalSource}."
-        else if ((m.homeGoals ?: 0) + (m.awayGoals ?: 0) > 0) log += "Keine Torschützen im Liveticker – bitte eintragen."
+        val total = (m.homeGoals ?: 0) + (m.awayGoals ?: 0)
+        val complete = m.goals.size == total && m.goals.count { it.forAsk } == m.askGoals(s.clubKeyword)
+        var result = m
+        if (complete) {
+            if (total > 0) log += "Torschützen aus ${r.goalSource}."
+        } else if (m.homeGoals != null) {
+            log += if (m.goals.isEmpty()) "Keine Torschützen im Liveticker – suche im ÖFB-Spielbericht."
+            else "Torschützen im Liveticker unvollständig – suche im ÖFB-Spielbericht."
+            val extra = StringBuilder()
+            val fb = scorersFallback(s, m.copy(goals = emptyList()), game.round ?: r.round, r.oefbId, log, extra)
+            result = if (fb.goals.size > m.goals.size) fb else m
+            raw.append(extra)
+        }
         r.u23?.let { log += "U23-Ergebnis gefunden: $it" }
-        return FetchOutcome(m, log, raw, r.u23)
+        return FetchOutcome(result, log, raw.toString(), r.u23)
+    }
+
+    /**
+     * Torschützen für ein bekanntes Spiel (Teams + Endstand) aus den bisherigen Quellen ergänzen:
+     * 1. ÖFB-Spielbericht (Spielnummer aus dem Ticker, sonst Link von der LMO-Seite derselben Runde)
+     * 2. ÖFB-Widget "Letztes Spiel" (nur wenn es dasselbe Spiel ist)
+     */
+    private suspend fun scorersFallback(
+        s: AppSettings, base: Match, round: Int?, oefbId: String?, log: MutableList<String>, raw: StringBuilder,
+    ): Match {
+        fun needs(m: Match) = m.goals.isEmpty() && (m.homeGoals ?: 0) + (m.awayGoals ?: 0) > 0
+        if (!needs(base)) return base
+        var report = oefbId?.takeIf { it.isNotBlank() }?.let { "https://www.oefb.at/bewerbe/Spiel/Spielbericht/$it/" }
+        if (report == null && round != null && s.lmoUrl.isNotBlank()) {
+            val snap = loadLmo(lmoUrlFor(s.lmoUrl, round))
+            val r = snap?.let { MatchParser.parseLmoRows(it.rows, s.clubKeyword) }
+            if (r is MatchParser.LmoRowResult.Played && MatchParser.sameMatch(r.match, base, s.clubKeyword)) {
+                report = r.match.reportUrl
+            } else {
+                log += "LMO Spieltag $round: Spielbericht-Link nicht gefunden."
+            }
+        }
+        var m = base
+        if (report != null) m = enrichFromReport(base.copy(reportUrl = report), s, log, raw, "ÖFB-Spielbericht")
+        if (needs(m)) {
+            val w = fetchFromOefb(s, log, raw)
+            if (w != null && MatchParser.sameMatch(w, m, s.clubKeyword) && w.goals.isNotEmpty()) {
+                m = m.copy(goals = w.goals)
+                log += "Torschützen aus dem ÖFB-Widget übernommen."
+            }
+        }
+        if (needs(m)) log += "Torschützen nicht gefunden – bitte unten eintragen."
+        return m
     }
 
     private suspend fun fetchFromLigaportal(s: AppSettings, log: MutableList<String>, raw: StringBuilder): Match? {
