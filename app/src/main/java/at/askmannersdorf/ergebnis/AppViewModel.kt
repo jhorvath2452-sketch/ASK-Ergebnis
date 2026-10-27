@@ -361,6 +361,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var goalPhoto by mutableStateOf<Bitmap?>(null); private set
     private var goalPhotoFaces: List<at.askmannersdorf.ergebnis.flyer.PhotoPlacement.Box> = emptyList()
     var goalFormat by mutableStateOf(FlyerFormat.FEED)
+        private set
     var goalFlyer by mutableStateOf<Bitmap?>(null); private set
     var goalStatus by mutableStateOf<String?>(null); private set
 
