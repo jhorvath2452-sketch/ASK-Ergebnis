@@ -459,7 +459,7 @@ private fun GoalFlyerSection(vm: AppViewModel, activity: ComponentActivity) {
             FlyerFormat.entries.forEach { f ->
                 FilterChip(
                     selected = vm.goalFormat == f,
-                    onClick = { vm.setGoalFormat(f) },
+                    onClick = { vm.chooseGoalFormat(f) },
                     label = { Text(f.label + if (f == FlyerFormat.STORY) " (Status/Story)" else " (Beitrag)") },
                 )
             }

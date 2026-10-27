@@ -371,7 +371,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectGoal(i: Int) { goalIndex = i; regenerateGoalFlyer() }
 
-    fun setGoalFormat(f: FlyerFormat) { goalFormat = f; regenerateGoalFlyer() }
+    fun chooseGoalFormat(f: FlyerFormat) { goalFormat = f; regenerateGoalFlyer() }
 
     fun setGoalPhoto(uri: Uri) = viewModelScope.launch {
         val bmp = FlyerShare.loadImage(getApplication(), uri)
