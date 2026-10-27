@@ -74,4 +74,26 @@ class LigaportalRealPagesTest {
         assertEquals(listOf("Harcevic", ""), r.match.goals.map { it.scorer })
         assertEquals(listOf(true, false), r.match.goals.map { it.forAsk })
     }
+
+    @Test fun tickerWeissenbachFiveGoalsAndU23() {
+        val obj = LigaportalTicker.extractJson(res("ticker_weissenbach_ask_1271295.html"))!!
+        val r = LigaportalTicker.parse(obj, kw)
+        val m = r.match
+        assertEquals(listOf(1, 4, 1, 2), listOf(m.homeGoals, m.awayGoals, m.halfHome, m.halfAway))
+        assertEquals(listOf("8'", "22'", "28'", "88'", "90+4'"), m.goals.map { it.minute })
+        assertEquals(listOf("Toni Srok", "Lirian Sejdini", "Marco Milivojevic", "Toni Srok", "Recep Özel"), m.goals.map { it.scorer })
+        assertEquals(listOf(true, true, false, true, true), m.goals.map { it.forAsk })
+        assertEquals("4-0", r.u23)
+        assertEquals("4091801", r.oefbId)
+        assertEquals(
+            "Weissenbach - ASK: 1-4 (1-2); 0:1 Srok, 0:2 Sejdini, 1:2, 1:3 Srok, 1:4 Özel  U23: 4-0",
+            SmsFormatter.build(m, kw, "ASK", SmsFormatter.shortTeamName(m.homeTeam), r.u23!!),
+        )
+        assertEquals(
+            listOf("Srok (8., 88.)", "Sejdini (22.)", "Özel (90+4.)"),
+            at.askmannersdorf.ergebnis.flyer.ScorerFormat.labels(
+                m.sortedGoals.filter { it.forAsk }.map { it.scorer to it.minute }, true,
+            ),
+        )
+    }
 }
