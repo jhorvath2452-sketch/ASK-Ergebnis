@@ -33,6 +33,50 @@ object LigaportalTicker {
         val round: Int? = null,
     )
 
+    data class Extract(val obj: JSONObject?, val diag: String)
+
+    /**
+     * Wie [extractJson], aber mit Begründung für das Protokoll. Scheitert das Lesen des
+     * Gesamtobjekts, werden die benötigten Felder einzeln herausgelesen.
+     */
+    fun extractWithDiag(html: String): Extract {
+        val anchor = Regex("""initialData\s*=\s*\{""").find(html)
+            ?: return Extract(null,
+                if (html.contains("summaryEvents")) "Spieldaten vorhanden, aber Startmarke 'initialData' fehlt"
+                else "Seite enthält keine Spieldaten ('initialData' fehlt)")
+        val start = html.indexOf('{', anchor.range.first)
+        val end = matchBrace(html, start)
+            ?: return Extract(null, "Spieldaten unvollständig (Ende des JSON nicht gefunden, Seite evtl. abgeschnitten: ${html.length / 1024} KB)")
+        val text = html.substring(start, end + 1)
+        val full = runCatching { JSONObject(text) }
+        full.getOrNull()?.let { return Extract(it, "Spieldaten gelesen (${text.length / 1024} KB)") }
+        val err = full.exceptionOrNull()?.let { "${it.javaClass.simpleName}: ${it.message?.take(160)}" }
+        val partial = runCatching { partialObject(text) }.getOrNull()
+        return if (partial != null && partial.has("scoreHome"))
+            Extract(partial, "Gesamt-JSON nicht lesbar ($err) – Felder einzeln ausgelesen")
+        else Extract(null, "Spieldaten nicht lesbar: $err")
+    }
+
+    /** Nur die benötigten Felder einzeln auslesen (Ersatz, falls das Gesamtobjekt scheitert). */
+    private fun partialObject(text: String): JSONObject {
+        val o = JSONObject()
+        for (k in listOf("teamHome", "teamAway", "date", "oefbId")) {
+            Regex(""""$k"\s*:\s*"((?:[^"\\]|\\.)*)"""").find(text)?.let {
+                o.put(k, runCatching { JSONObject("{\"v\":\"${it.groupValues[1]}\"}").getString("v") }.getOrDefault(it.groupValues[1]))
+            }
+        }
+        for (k in listOf("teamHomeId", "teamAwayId", "scoreHome", "scoreAway", "scoreHalftimeHome", "scoreHalftimeAway", "roundNr")) {
+            Regex(""""$k"\s*:\s*(\d+)""").find(text)?.let { o.put(k, it.groupValues[1].toInt()) }
+        }
+        for (k in listOf("summaryEvents", "events")) {
+            val m = Regex(""""$k"\s*:\s*\[""").find(text) ?: continue
+            val s = text.indexOf('[', m.range.first)
+            val e = matchBrace(text, s, '[', ']') ?: continue
+            runCatching { JSONArray(text.substring(s, e + 1)) }.getOrNull()?.let { o.put(k, it) }
+        }
+        return o
+    }
+
     /** `var initialData = {…}` aus dem HTML herausschneiden (Klammern zählen, Strings beachten). */
     fun extractJson(html: String): JSONObject? {
         val anchors = listOf(Regex("""initialData\s*=\s*\{"""), Regex("""=\s*\{\s*"date"\s*:"""))
@@ -46,7 +90,8 @@ object LigaportalTicker {
         return null
     }
 
-    private fun matchBrace(s: String, start: Int): Int? {
+    private fun matchBrace(s: String, start: Int, open: Char = '{', close: Char = '}'): Int? {
+        if (start < 0) return null
         var depth = 0; var inStr = false; var esc = false
         for (i in start until s.length) {
             val ch = s[i]
@@ -54,8 +99,8 @@ object LigaportalTicker {
                 when { esc -> esc = false; ch == '\\' -> esc = true; ch == '"' -> inStr = false }
             } else when (ch) {
                 '"' -> inStr = true
-                '{' -> depth++
-                '}' -> { depth--; if (depth == 0) return i }
+                open -> depth++
+                close -> { depth--; if (depth == 0) return i }
             }
         }
         return null

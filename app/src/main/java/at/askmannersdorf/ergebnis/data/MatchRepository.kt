@@ -22,6 +22,9 @@ data class ScheduleOutcome(val games: List<LigaportalSchedule.Game>, val log: St
  * 2. ÖFB-Widget "Letztes Spiel"
  * 3. Ligaportal
  */
+private const val DESKTOP_UA =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
 class MatchRepository(context: Context) {
     private val extractor = WebPageExtractor(context)
 
@@ -204,11 +207,36 @@ class MatchRepository(context: Context) {
         .followRedirects(true)
         .build()
 
+    data class HttpPage(val code: Int?, val body: String?, val finalUrl: String?, val error: String?) {
+        fun describe(): String = when {
+            error != null -> "Verbindungsfehler: $error"
+            body == null -> "HTTP $code ohne Inhalt"
+            else -> "HTTP $code · ${body.length / 1024} KB" + (finalUrl?.let { " · $it" } ?: "")
+        }
+    }
+
+    /** Seite abrufen und dabei festhalten, was passiert ist (für das Protokoll). */
+    private suspend fun fetchPage(url: String): HttpPage = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val req = okhttp3.Request.Builder().url(url)
+                .header("User-Agent", DESKTOP_UA)
+                .header("Accept", "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "de-AT,de;q=0.9")
+                .build()
+            http.newCall(req).execute().use { r ->
+                val redirected = r.request.url.toString().takeIf { it.trimEnd('/') != url.trimEnd('/') }
+                HttpPage(r.code, r.body?.string(), redirected?.let { "weitergeleitet auf $it" }, null)
+            }
+        } catch (e: Throwable) {
+            HttpPage(null, null, null, "${e.javaClass.simpleName}: ${e.message}")
+        }
+    }
+
     /** HTML wie ein normaler Browser abrufen (wie der LMO-Import: User-Agent + Accept-Header). */
     private suspend fun fetchHtml(url: String): String? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         try {
             val req = okhttp3.Request.Builder().url(url)
-                .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36")
+                .header("User-Agent", DESKTOP_UA)
                 .header("Accept", "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8")
                 .header("Accept-Language", "de-AT,de;q=0.9")
                 .build()
@@ -243,24 +271,52 @@ class MatchRepository(context: Context) {
     suspend fun fetchFromTicker(s: AppSettings, game: LigaportalSchedule.Game): FetchOutcome {
         val log = mutableListOf<String>()
         val url = game.tickerUrl ?: return FetchOutcome(null, listOf("Für dieses Spiel gibt es keinen Liveticker-Link."), "")
-        fun json(h: String) = runCatching { LigaportalTicker.extractJson(h) }.getOrNull()
-        var obj = fetchHtml(url)?.let { h -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { json(h) } }
+        val diagRaw = StringBuilder()
+        suspend fun extract(h: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            runCatching { LigaportalTicker.extractWithDiag(h) }
+                .getOrElse { LigaportalTicker.Extract(null, "Auswertung fehlgeschlagen: ${it.javaClass.simpleName}: ${it.message}") }
+        }
+        fun snippet(label: String, h: String) {
+            diagRaw.append("── $label: Seitenanfang ──\n").append(h.take(800)).append("\n")
+            val i = h.indexOf("initialData")
+            if (i >= 0) diagRaw.append("── um 'initialData' ──\n").append(h.substring(i, minOf(h.length, i + 600))).append("\n")
+            diagRaw.append("\n")
+        }
+
+        // 1) direkt abrufen
+        val page = fetchPage(url)
+        var obj: org.json.JSONObject? = null
+        if (page.body != null) {
+            val ex = extract(page.body)
+            obj = ex.obj
+            log += "Liveticker direkt: ${page.describe()} – ${ex.diag}"
+            if (obj == null) snippet("Direkter Abruf", page.body)
+        } else {
+            log += "Liveticker direkt: ${page.describe()}"
+        }
+        // 2) Browser-Ansicht
         if (obj == null) {
-            log += "Liveticker direkt nicht lesbar – versuche Browser-Ansicht."
-            val rendered = extractor.loadRenderedHtml(url, 35_000) { h -> h.contains("initialData") }
-            obj = rendered?.let { h -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { json(h) } }
+            val rendered = extractor.loadRenderedWithDiag(url, 35_000) { h -> h.contains("initialData") }
+            if (rendered.html != null) {
+                val ex = extract(rendered.html)
+                obj = ex.obj
+                log += "Liveticker Browser-Ansicht: ${rendered.diag} – ${ex.diag}"
+                if (obj == null) snippet("Browser-Ansicht", rendered.html)
+            } else {
+                log += "Liveticker Browser-Ansicht: ${rendered.diag}"
+            }
         }
         if (obj == null) {
-            log += "Liveticker konnte nicht ausgelesen werden."
+            log += "Liveticker konnte nicht ausgelesen werden (Details unter „Rohdaten“)."
             // Ersatz: Spielplan-Daten (Ergebnis + Halbzeit, ohne Torschützen)
             val m = if (game.isPlayed) Match(
                 homeTeam = game.home, awayTeam = game.away, homeGoals = game.homeGoals, awayGoals = game.awayGoals,
                 halfHome = game.halfHome, halfAway = game.halfAway, date = game.date,
                 competition = game.round?.let { "Runde $it" }.orEmpty(), source = "Ligaportal-Spielplan",
             ) else null
-            if (m == null) return FetchOutcome(null, log, "")
+            if (m == null) return FetchOutcome(null, log, diagRaw.toString())
             log += "Ergebnis aus dem Spielplan übernommen."
-            val raw = StringBuilder()
+            val raw = StringBuilder(diagRaw)
             val withGoals = scorersFallback(s, m, game.round, null, log, raw)
             return FetchOutcome(withGoals, log, raw.toString())
         }
@@ -308,10 +364,15 @@ class MatchRepository(context: Context) {
         if (report == null && round != null && s.lmoUrl.isNotBlank()) {
             val snap = loadLmo(lmoUrlFor(s.lmoUrl, round))
             val r = snap?.let { MatchParser.parseLmoRows(it.rows, s.clubKeyword) }
-            if (r is MatchParser.LmoRowResult.Played && MatchParser.sameMatch(r.match, base, s.clubKeyword)) {
-                report = r.match.reportUrl
-            } else {
-                log += "LMO Spieltag $round: Spielbericht-Link nicht gefunden."
+            when {
+                snap == null -> log += "LMO Spieltag $round: Seite nicht geladen."
+                r is MatchParser.LmoRowResult.Played && MatchParser.sameMatch(r.match, base, s.clubKeyword) -> {
+                    report = r.match.reportUrl
+                    if (report == null) log += "LMO Spieltag $round: Spiel gefunden, aber ohne Spielbericht-Link."
+                }
+                r is MatchParser.LmoRowResult.Played -> log += "LMO Spieltag $round: anderes Ergebnis (${r.match.homeGoals}:${r.match.awayGoals}) als im Spielplan."
+                r is MatchParser.LmoRowResult.Open -> log += "LMO Spieltag $round: Spiel dort noch ohne Ergebnis."
+                else -> log += "LMO Spieltag $round: Spiel nicht gefunden (${snap.rows.size} Tabellenzeilen gelesen)."
             }
         }
         var m = base

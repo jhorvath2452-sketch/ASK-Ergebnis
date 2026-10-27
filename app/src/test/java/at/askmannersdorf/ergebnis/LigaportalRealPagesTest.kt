@@ -96,4 +96,22 @@ class LigaportalRealPagesTest {
             ),
         )
     }
+
+    @Test fun tickerPartialFallbackWhenJsonBroken() {
+        val html = res("ticker_himberg_ask_1271297.html")
+            .replace("\"sponsorTextAdBanner\":null", "\"sponsorTextAdBanner\":undefined")
+        val ex = LigaportalTicker.extractWithDiag(html)
+        assertNotNull(ex.diag, ex.obj)
+        assertTrue(ex.diag, ex.diag.contains("einzeln"))
+        val r = LigaportalTicker.parse(ex.obj!!, kw)
+        assertEquals(listOf(1, 1, 0, 0), listOf(r.match.homeGoals, r.match.awayGoals, r.match.halfHome, r.match.halfAway))
+        assertEquals(listOf("Edin Harcevic", "Luis Schweighofer"), r.match.goals.map { it.scorer })
+        assertEquals("1-1", r.u23)
+    }
+
+    @Test fun tickerDiagWhenNoData() {
+        val ex = LigaportalTicker.extractWithDiag("<html><body>Bitte Cookies akzeptieren</body></html>")
+        assertEquals(null, ex.obj)
+        assertTrue(ex.diag, ex.diag.contains("keine Spieldaten"))
+    }
 }

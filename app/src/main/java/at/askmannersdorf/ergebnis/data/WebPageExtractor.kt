@@ -136,9 +136,18 @@ class WebPageExtractor(private val context: Context) {
      * (Ersatzweg, falls der direkte Abruf blockiert wird). Wiederholt die Abfrage,
      * bis [accept] zufrieden ist oder [timeoutMs] abläuft.
      */
+    data class Rendered(val html: String?, val diag: String)
+
     @SuppressLint("SetJavaScriptEnabled")
     suspend fun loadRenderedHtml(url: String, timeoutMs: Long = 30_000, accept: (String) -> Boolean): String? =
+        loadRenderedWithDiag(url, timeoutMs, accept).html
+
+    /** Wie [loadRenderedHtml], plus Beschreibung, was beim Laden passiert ist. */
+    @SuppressLint("SetJavaScriptEnabled")
+    suspend fun loadRenderedWithDiag(url: String, timeoutMs: Long = 30_000, accept: (String) -> Boolean): Rendered =
         withContext(Dispatchers.Main) {
+            if (!isSupported) return@withContext Rendered(null, "WebView zu alt – bitte 'Android System WebView' aktualisieren")
+            val events = mutableListOf<String>()
             val webView = WebView(context.applicationContext)
             val done = CompletableDeferred<String>()
             var last: String? = null
@@ -166,10 +175,26 @@ class WebPageExtractor(private val context: Context) {
                         handler.postDelayed(this, 1500)
                     }
                 }
-                webView.webViewClient = WebViewClient()
+                webView.webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, u: String?) {
+                        events += "geladen: ${u?.take(80)}"
+                    }
+                    override fun onReceivedError(view: WebView?, req: android.webkit.WebResourceRequest?, err: android.webkit.WebResourceError?) {
+                        if (req?.isForMainFrame == true) events += "Ladefehler ${err?.errorCode}: ${err?.description}"
+                    }
+                    override fun onReceivedHttpError(view: WebView?, req: android.webkit.WebResourceRequest?, resp: android.webkit.WebResourceResponse?) {
+                        if (req?.isForMainFrame == true) events += "HTTP ${resp?.statusCode}"
+                    }
+                }
                 webView.loadUrl(url)
                 handler.postDelayed(poll, 2000)
-                withTimeoutOrNull(timeoutMs) { done.await() } ?: last
+                val html = withTimeoutOrNull(timeoutMs) { done.await() } ?: last
+                val diag = buildString {
+                    append(if (events.isEmpty()) "Seite hat nicht fertig geladen" else events.distinct().joinToString(", "))
+                    append(" · ")
+                    append(if (html == null) "kein Inhalt nach ${timeoutMs / 1000} s" else "${html.length / 1024} KB Inhalt")
+                }
+                Rendered(html, diag)
             } finally {
                 handler.removeCallbacksAndMessages(null)
                 handler.post { webView.stopLoading(); webView.destroy() }
