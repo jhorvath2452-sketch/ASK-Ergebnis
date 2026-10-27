@@ -3,6 +3,7 @@ package at.askmannersdorf.ergebnis
 import at.askmannersdorf.ergebnis.data.LigaportalSchedule
 import at.askmannersdorf.ergebnis.data.LigaportalTicker
 import at.askmannersdorf.ergebnis.data.SmsFormatter
+import at.askmannersdorf.ergebnis.model.goalTimeline
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -126,5 +127,13 @@ class LigaportalRealPagesTest {
             games.first { it.round == 11 }.tickerUrl,
         )
         assertTrue(games.all { it.tickerUrl!!.startsWith("https://ticker.ligaportal.at/live-ticker/") })
+    }
+
+    @Test fun goalTimelineForGoalFlyer() {
+        val m = LigaportalTicker.parse(LigaportalTicker.extractJson(res("ticker_weissenbach_ask_1271295.html"))!!, kw).match
+        val ask = m.goalTimeline(kw).filter { it.goal.forAsk }
+        assertEquals(listOf("0:1", "0:2", "1:3", "1:4"), ask.map { it.score })
+        assertEquals(listOf("Toni Srok", "Lirian Sejdini", "Toni Srok", "Recep Özel"), ask.map { it.goal.scorer })
+        assertEquals(listOf("8'", "22'", "88'", "90+4'"), ask.map { it.goal.minute })
     }
 }

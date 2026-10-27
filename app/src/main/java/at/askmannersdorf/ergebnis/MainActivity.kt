@@ -133,6 +133,7 @@ private fun MainScreen(vm: AppViewModel, activity: ComponentActivity) {
         MatchSection(vm)
         SmsSection(vm)
         FlyerSection(vm, activity)
+        GoalFlyerSection(vm, activity)
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -405,6 +406,89 @@ private fun FlyerSection(vm: AppViewModel, activity: ComponentActivity) {
             OutlinedButton(onClick = vm::saveFlyer, modifier = Modifier.fillMaxWidth()) { Text("In Galerie speichern") }
         }
         vm.flyerStatus?.let { Text(it, fontSize = 13.sp) }
+    }
+}
+
+// ── 4. Tor-Flyer ────────────────────────────────────────────────────
+
+@Composable
+private fun GoalFlyerSection(vm: AppViewModel, activity: ComponentActivity) {
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { vm.setGoalPhoto(it) }
+    }
+    val imageOnly = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+    var menu by remember { mutableStateOf(false) }
+    val goals = vm.askGoals
+    val sel = vm.selectedGoal
+
+    Section("4 · Tor-Flyer") {
+        if (goals.isEmpty()) {
+            Text(
+                "Noch keine ASK-Tore. Zuerst oben das Spiel wählen und „Ergebnis abrufen“ – " +
+                    "das geht auch während des Spiels mit den bis dahin gefallenen Toren.",
+                fontSize = 13.sp, color = Color.Gray,
+            )
+            return@Section
+        }
+        Column {
+            OutlinedButton(onClick = { menu = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    sel?.let { "${it.goal.minute} ${it.goal.scorer.ifBlank { "?" }} – ${it.score}" } ?: "Tor wählen",
+                    modifier = Modifier.weight(1f),
+                )
+                Text(" ▾")
+            }
+            DropdownMenu(menu, { menu = false }) {
+                goals.forEachIndexed { i, ev ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "${ev.goal.minute} ${ev.goal.scorer.ifBlank { "?" }} – ${ev.score}",
+                                fontWeight = if (ev == sel) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        },
+                        onClick = { vm.selectGoal(i); menu = false },
+                    )
+                }
+            }
+        }
+        Button(onClick = { photoPicker.launch(imageOnly) }, modifier = Modifier.fillMaxWidth()) {
+            Text(if (vm.goalPhoto == null) "Spielerfoto wählen" else "Anderes Spielerfoto wählen")
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlyerFormat.entries.forEach { f ->
+                FilterChip(
+                    selected = vm.goalFormat == f,
+                    onClick = { vm.setGoalFormat(f) },
+                    label = { Text(f.label + if (f == FlyerFormat.STORY) " (Status/Story)" else " (Beitrag)") },
+                )
+            }
+        }
+        val bmp = vm.goalFlyer
+        if (bmp != null) {
+            Image(
+                bmp.asImageBitmap(), contentDescription = "Tor-Flyer-Vorschau",
+                modifier = Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth,
+            )
+            if (vm.goalPhoto == null) Text("Tipp: Mit Spielerfoto sieht der Flyer viel besser aus.", fontSize = 13.sp, color = Color.Gray)
+            Button(
+                onClick = { vm.shareGoalFlyer(activity, ShareTarget.BUSINESS_SUITE) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = AskLime, contentColor = AskGreen),
+            ) { Text("Meta Business Suite (Facebook + Instagram)", fontWeight = FontWeight.Bold) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ShareButton("WhatsApp", Modifier.weight(1f)) { vm.shareGoalFlyer(activity, ShareTarget.WHATSAPP) }
+                ShareButton("Instagram", Modifier.weight(1f)) { vm.shareGoalFlyer(activity, ShareTarget.INSTAGRAM) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ShareButton("Facebook", Modifier.weight(1f)) { vm.shareGoalFlyer(activity, ShareTarget.FACEBOOK) }
+                ShareButton("Andere …", Modifier.weight(1f)) { vm.shareGoalFlyer(activity, ShareTarget.OTHER) }
+            }
+            OutlinedButton(onClick = vm::saveGoalFlyer, modifier = Modifier.fillMaxWidth()) { Text("In Galerie speichern") }
+        } else {
+            Text("Flyer wird erstellt …", color = Color.Gray, fontSize = 13.sp)
+        }
+        vm.goalStatus?.let { Text(it, fontSize = 13.sp) }
     }
 }
 

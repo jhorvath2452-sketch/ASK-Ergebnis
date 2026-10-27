@@ -21,6 +21,7 @@ import at.askmannersdorf.ergebnis.flyer.FlyerShare
 import at.askmannersdorf.ergebnis.flyer.ShareTarget
 import at.askmannersdorf.ergebnis.model.Goal
 import at.askmannersdorf.ergebnis.model.Match
+import at.askmannersdorf.ergebnis.model.goalTimeline
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -143,6 +144,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 r.match?.let { m ->
                     val oppChanged = m.opponent(settings.clubKeyword) != match.opponent(settings.clubKeyword)
                     match = m
+                    goalIndex = -1 // Tor-Flyer: standardmäßig das zuletzt gefallene ASK-Tor
                     opponentShort = SmsFormatter.shortTeamName(m.opponent(settings.clubKeyword))
                     smsEdited = false
                     postEdited = false
@@ -276,6 +278,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun oppShortLabel() = opponentShort.ifBlank { SmsFormatter.shortTeamName(match.opponent(settings.clubKeyword)) }
 
     fun regenerateFlyer() {
+        regenerateGoalFlyer()
         if (!flyerEnabled || !match.isComplete) { flyer = null; return }
         val input = FlyerInput(
             match = match,
@@ -303,8 +306,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun shareFlyer(activity: android.app.Activity, target: ShareTarget) {
         val bmp = flyer ?: return
+        shareBitmap(activity, bmp, target, postText, fileName()) { flyerStatus = it }
+    }
+
+    /** Ein Bild teilen (WhatsApp/Instagram/Facebook/Business Suite/…), Text vorher in die Zwischenablage. */
+    private fun shareBitmap(
+        activity: android.app.Activity, bmp: Bitmap, target: ShareTarget, text: String, name: String, status: (String?) -> Unit,
+    ) {
         viewModelScope.launch {
-            val caption = postText.takeIf { it.isNotBlank() && target != ShareTarget.WHATSAPP }
+            val caption = text.takeIf { it.isNotBlank() && target != ShareTarget.WHATSAPP }
             if (caption != null) {
                 val cm = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 cm.setPrimaryClip(android.content.ClipData.newPlainText("Beitragstext", caption))
@@ -312,22 +322,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             if (target == ShareTarget.BUSINESS_SUITE) {
                 // Business Suite nimmt geteilte Bilder nicht an ("Content-Art wird nicht unterstützt"):
                 // Flyer in die Galerie legen und die App öffnen – dort "Beitrag/Story erstellen" + neuestes Foto.
-                val saved = FlyerShare.saveToGallery(activity, bmp, fileName())
+                val saved = FlyerShare.saveToGallery(activity, bmp, name)
                 val opened = FlyerShare.launchApp(activity, target.pkg!!)
-                flyerStatus = when {
+                status(when {
                     !saved -> "Flyer konnte nicht gespeichert werden."
                     !opened -> "Flyer ist in der Galerie (Bilder/ASK Ergebnis). Business Suite ist nicht installiert."
                     else -> "Flyer ist in der Galerie, Beitragstext kopiert. In der Business Suite „Beitrag“ oder „Story“ erstellen und das neueste Foto wählen."
-                }
+                })
                 return@launch
             }
-            val uri = FlyerShare.toShareUri(activity, bmp, fileName())
+            val uri = FlyerShare.toShareUri(activity, bmp, name)
             val ok = FlyerShare.share(activity, uri, target, caption)
-            flyerStatus = when {
+            status(when {
                 !ok -> "${target.label} wurde nicht gefunden – bitte im Teilen-Menü auswählen."
                 caption != null -> "Beitragstext ist kopiert – falls er fehlt, einfach einfügen."
                 else -> null
-            }
+            })
         }
     }
 
@@ -337,6 +347,83 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             flyerStatus = if (FlyerShare.saveToGallery(getApplication(), bmp, fileName()))
                 "In der Galerie gespeichert (Bilder/ASK Ergebnis)."
             else "Speichern fehlgeschlagen."
+        }
+    }
+
+    // ── Tor-Flyer ──────────────────────────────────────────────────
+
+    /** ASK-Tore mit neuem Spielstand (aus dem Liveticker bzw. der Torliste). */
+    val askGoals: List<at.askmannersdorf.ergebnis.model.GoalEvent>
+        get() = match.goalTimeline(settings.clubKeyword).filter { it.goal.forAsk }
+
+    var goalIndex by mutableStateOf(-1)
+        private set
+    var goalPhoto by mutableStateOf<Bitmap?>(null); private set
+    private var goalPhotoFaces: List<at.askmannersdorf.ergebnis.flyer.PhotoPlacement.Box> = emptyList()
+    var goalFormat by mutableStateOf(FlyerFormat.FEED)
+    var goalFlyer by mutableStateOf<Bitmap?>(null); private set
+    var goalStatus by mutableStateOf<String?>(null); private set
+
+    /** Gewähltes Tor; ohne Auswahl das zuletzt gefallene ASK-Tor. */
+    val selectedGoal: at.askmannersdorf.ergebnis.model.GoalEvent?
+        get() = askGoals.let { g -> g.getOrNull(goalIndex) ?: g.lastOrNull() }
+
+    fun selectGoal(i: Int) { goalIndex = i; regenerateGoalFlyer() }
+
+    fun setGoalFormat(f: FlyerFormat) { goalFormat = f; regenerateGoalFlyer() }
+
+    fun setGoalPhoto(uri: Uri) = viewModelScope.launch {
+        val bmp = FlyerShare.loadImage(getApplication(), uri)
+        goalPhoto = bmp
+        goalPhotoFaces = emptyList()
+        if (bmp == null) {
+            goalStatus = "Foto konnte nicht geladen werden."
+        } else {
+            goalStatus = "Suche Gesichter …"
+            goalPhotoFaces = withContext(Dispatchers.Default) { at.askmannersdorf.ergebnis.flyer.FaceFinder.find(bmp) }
+            goalStatus = if (goalPhotoFaces.isEmpty()) "Kein Gesicht erkannt – Foto wird mittig platziert."
+            else "${goalPhotoFaces.size} Gesicht(er) erkannt – bleiben frei vom Text."
+        }
+        regenerateGoalFlyer()
+    }
+
+    fun regenerateGoalFlyer() {
+        val ev = selectedGoal
+        if (ev == null || !match.isComplete) { goalFlyer = null; return }
+        val input = at.askmannersdorf.ergebnis.flyer.GoalFlyerInput(
+            match = match, clubKeyword = settings.clubKeyword, hashtag = settings.hashtag,
+            photo = goalPhoto, photoFaces = goalPhotoFaces, opponentLogo = opponentLogo,
+            scorer = ev.goal.scorer, minute = ev.goal.minute, home = ev.home, away = ev.away,
+            ownShort = settings.smsShortName.ifBlank { "ASK" },
+        )
+        val fmt = goalFormat
+        viewModelScope.launch {
+            goalFlyer = withContext(Dispatchers.Default) { renderer.renderGoal(input, fmt) }
+        }
+    }
+
+    /** Beitragstext für den Tor-Flyer. */
+    val goalPostText: String
+        get() {
+            val ev = selectedGoal ?: return ""
+            val name = SmsFormatter.shortScorer(ev.goal.scorer)
+            return "TOOOR! ⚽ ${ev.goal.minute} $name trifft für den ${settings.smsShortName.ifBlank { "ASK" }}!\n" +
+                "Neuer Spielstand: ${match.homeTeam} – ${match.awayTeam} ${ev.score}\n\n${settings.hashtag}"
+        }
+
+    fun shareGoalFlyer(activity: android.app.Activity, target: ShareTarget) {
+        val bmp = goalFlyer ?: return
+        val name = "ASK_Tor_${SmsFormatter.shortScorer(selectedGoal?.goal?.scorer.orEmpty()).replace(Regex("[^A-Za-z0-9]+"), "_")}_" +
+            "${goalFormat.name.lowercase()}_${System.currentTimeMillis() / 1000}.png"
+        shareBitmap(activity, bmp, target, goalPostText, name) { goalStatus = it }
+    }
+
+    fun saveGoalFlyer() {
+        val bmp = goalFlyer ?: return
+        viewModelScope.launch {
+            val name = "ASK_Tor_${System.currentTimeMillis() / 1000}.png"
+            goalStatus = if (FlyerShare.saveToGallery(getApplication(), bmp, name))
+                "In der Galerie gespeichert (Bilder/ASK Ergebnis)." else "Speichern fehlgeschlagen."
         }
     }
 }

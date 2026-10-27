@@ -86,3 +86,18 @@ data class Match(
 }
 
 enum class Outcome { WIN, DRAW, LOSS }
+
+/** Ein Tor mit dem Spielstand (Heim:Gast) direkt danach. */
+data class GoalEvent(val goal: Goal, val home: Int, val away: Int) {
+    val score: String get() = "$home:$away"
+}
+
+/** Alle Tore chronologisch, jeweils mit neuem Spielstand. */
+fun Match.goalTimeline(clubKeyword: String): List<GoalEvent> {
+    val askHome = isAskHome(clubKeyword)
+    var h = 0; var a = 0
+    return sortedGoals.map { g ->
+        if (g.forAsk == askHome) h++ else a++
+        GoalEvent(g, h, a)
+    }
+}

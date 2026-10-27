@@ -34,6 +34,8 @@ Android-App für den ASK Mannersdorf: Ergebnis des letzten Spiels abrufen, Ergeb
    Außerdem: WhatsApp (Status) / Instagram / Facebook / In Galerie speichern.
    Titel automatisch: HEIMSIEG! / AUSWÄRTSSIEG! / UNENTSCHIEDEN! / NIEDERLAGE.
 
+4. **Tor-Flyer** – ASK-Tor aus der Liste wählen (aus dem Liveticker, auch während des Spiels), Spielerfoto aus der Galerie wählen: „TREFFER FÜR DEN ASK – DURCH SROK! – NEUER SPIELSTAND 0:1“ mit Minute. Teilen wie beim Ergebnis-Flyer.
+
 ## Wenn etwas nicht erkannt wird
 
 - Unter „Rohdaten der Abfrage anzeigen“ steht, was ÖFB bzw. Ligaportal geliefert haben. Diesen Text bitte an Claude schicken, dann wird die Erkennung angepasst (`MatchParser.kt`).
