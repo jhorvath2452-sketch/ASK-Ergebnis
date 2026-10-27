@@ -115,4 +115,16 @@ class LigaportalRealPagesTest {
         assertEquals(null, ex.obj)
         assertTrue(ex.diag, ex.diag.contains("keine Spieldaten"))
     }
+
+    @Test fun scheduleWithRelativeLinks() {
+        // So liefert Ligaportal den Spielplan an die App (ohne Browser): Links ohne Domain
+        val html = res("spielplan_ask_2026-10-27.html").replace("https://ticker.ligaportal.at/live-ticker/", "/live-ticker/")
+        val games = LigaportalSchedule.parse(html)
+        assertEquals(26, games.size)
+        assertEquals(
+            "https://ticker.ligaportal.at/live-ticker/1271297/sc-himberg-gegen-ask-mannersdorf",
+            games.first { it.round == 11 }.tickerUrl,
+        )
+        assertTrue(games.all { it.tickerUrl!!.startsWith("https://ticker.ligaportal.at/live-ticker/") })
+    }
 }

@@ -270,7 +270,8 @@ class MatchRepository(context: Context) {
     /** Ergebnis, Halbzeit, Torschützen und U23 eines Spiels aus seinem Liveticker. */
     suspend fun fetchFromTicker(s: AppSettings, game: LigaportalSchedule.Game): FetchOutcome {
         val log = mutableListOf<String>()
-        val url = game.tickerUrl ?: return FetchOutcome(null, listOf("Für dieses Spiel gibt es keinen Liveticker-Link."), "")
+        val url = game.tickerUrl?.let { LigaportalSchedule.absolute(it) }
+            ?: return FetchOutcome(null, listOf("Für dieses Spiel gibt es keinen Liveticker-Link."), "")
         val diagRaw = StringBuilder()
         suspend fun extract(h: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             runCatching { LigaportalTicker.extractWithDiag(h) }

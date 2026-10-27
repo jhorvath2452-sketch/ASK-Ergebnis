@@ -81,10 +81,18 @@ object LigaportalSchedule {
                 halfHome = r?.takeUnless { isTime }?.groupValues?.get(3)?.toIntOrNull(),
                 halfAway = r?.takeUnless { isTime }?.groupValues?.get(4)?.toIntOrNull(),
                 kickoff = if (isTime || (r == null && time.matches(score))) score else null,
-                tickerUrl = ticker.find(body)?.groupValues?.get(1)?.let(LigaportalHtml::decode),
+                tickerUrl = ticker.find(body)?.groupValues?.get(1)?.let(LigaportalHtml::decode)?.let(::absolute),
             )
         }
         return games
+    }
+
+    /** Relative Links ("/live-ticker/…", "//ticker…") zu vollständigen Adressen machen. */
+    fun absolute(u: String, base: String = "https://ticker.ligaportal.at"): String = when {
+        u.startsWith("http://") || u.startsWith("https://") -> u
+        u.startsWith("//") -> "https:$u"
+        u.startsWith("/") -> base.trimEnd('/') + u
+        else -> base.trimEnd('/') + "/" + u
     }
 
     /** Zuletzt gespieltes Spiel (für die Vorauswahl). */
