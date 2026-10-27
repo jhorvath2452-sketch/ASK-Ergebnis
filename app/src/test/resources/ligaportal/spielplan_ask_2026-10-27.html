@@ -1,0 +1,3308 @@
+<!DOCTYPE html><html lang="de" prefix="og: http://ogp.me/ns#"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style rel="stylesheet" type="text/css">@charset "utf-8";
+
+.uv-icon { box-sizing: border-box; display: inline-block; cursor: pointer; width: 39px; height: 39px; position: fixed; z-index: 100002; opacity: 0.8; transition: opacity 100ms; }
+
+.uv-icon.uv-bottom-right { bottom: 10px; right: 12px; }
+
+.uv-icon.uv-top-right { top: 10px; right: 12px; }
+
+.uv-icon.uv-bottom-left { bottom: 10px; left: 12px; }
+
+.uv-icon.uv-top-left { top: 10px; left: 12px; }
+
+.uv-icon.uv-is-selected { opacity: 1; }
+
+.uv-icon svg { width: 39px; height: 39px; }
+
+.uv-icon .uv-tooltip-container { position: relative; }
+
+.uv-icon .uv-tooltip-container .uv-icon-tooltip { display: none; position: absolute; height: 20px; padding: 4px 8px; background-color: rgb(70, 70, 83); color: white; font-size: 12px; border-radius: 4px; line-height: 18px; font-family: "Open Sans", sans-serif; white-space: nowrap; }
+
+.uv-icon .uv-tooltip-container .uv-icon-tooltip.left, .uv-icon .uv-tooltip-container .uv-icon-tooltip.right { top: 0px; bottom: 0px; margin: auto 10px; }
+
+.uv-icon .uv-tooltip-container .uv-icon-tooltip.top, .uv-icon .uv-tooltip-container .uv-icon-tooltip.bottom { transform: translate(-30%); margin: 10px auto; }
+
+.uv-icon .uv-tooltip-container .uv-icon-tooltip.top { bottom: 100%; }
+
+.uv-icon .uv-tooltip-container .uv-icon-tooltip.bottom { top: 100%; }
+
+.uv-icon .uv-tooltip-container .uv-icon-tooltip.left { right: 100%; }
+
+.uv-icon .uv-tooltip-container .uv-icon-tooltip.right { left: 100%; }
+
+.uv-icon .uv-tooltip-container:hover .uv-icon-tooltip { display: block; }
+
+.uv-icon-trigger { display: block; width: 39px; height: 39px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; padding: 0px; cursor: pointer; background: none; }
+
+.uv-popover { font-family: sans-serif; font-weight: 100; font-size: 13px; color: black; position: fixed; z-index: 100001; }
+
+.uv-popover-content { border-radius: 5px; background: white; border: 1px solid transparent; position: relative; width: 325px; height: 325px; transition: background 200ms; }
+
+.uv-bottom .uv-popover-content { box-shadow: rgba(0, 0, 0, 0.3) 0px -10px 60px, rgba(0, 0, 0, 0.1) 0px 0px 20px; }
+
+.uv-top .uv-popover-content { box-shadow: rgba(0, 0, 0, 0.3) 0px 10px 60px, rgba(0, 0, 0, 0.1) 0px 0px 20px; }
+
+.uv-left .uv-popover-content { box-shadow: rgba(0, 0, 0, 0.3) 10px 0px 60px, rgba(0, 0, 0, 0.1) 0px 0px 20px; }
+
+.uv-right .uv-popover-content { box-shadow: rgba(0, 0, 0, 0.3) -10px 0px 60px, rgba(0, 0, 0, 0.1) 0px 0px 20px; }
+
+.uv-ie8 .uv-popover-content { position: relative; }
+
+.uv-ie8 .uv-popover-content .uv-popover-content-shadow { display: block; background: black; content: ""; position: absolute; left: -15px; top: -15px; width: 100%; height: 100%; z-index: -1; }
+
+.uv-popover-tail { border: 9px solid transparent; width: 0px; z-index: 10; position: absolute; transition: border-top-color 200ms; }
+
+.uv-top .uv-popover-tail { bottom: -20px; border-top: 11px solid white; }
+
+.uv-bottom .uv-popover-tail { top: -20px; border-bottom: 11px solid white; }
+
+.uv-left .uv-popover-tail { right: -20px; border-left: 11px solid white; }
+
+.uv-right .uv-popover-tail { left: -20px; border-right: 11px solid white; }
+
+.uv-popover-loading { background: white; border-radius: 5px; position: absolute; width: 100%; height: 100%; left: 0px; top: 0px; }
+
+.uv-popover-loading-text { position: absolute; top: 50%; margin-top: -0.5em; width: 100%; text-align: center; }
+
+.uv-popover-iframe-container { height: 100%; }
+
+.uv-popover-iframe { border-radius: 5px; overflow: hidden; }
+
+.uv-is-hidden { display: none; }
+
+.uv-is-invisible { display: block !important; visibility: hidden !important; }
+
+.uv-is-transitioning { display: block !important; }
+
+.uv-no-transition { transition: none !important; }
+
+.uv-fade { opacity: 1; transition: opacity 200ms ease-out; }
+
+.uv-fade.uv-is-hidden { opacity: 0; }
+
+.uv-scale-top, .uv-scale-top-left, .uv-scale-top-right, .uv-scale-bottom, .uv-scale-bottom-left, .uv-scale-bottom-right, .uv-scale-right, .uv-scale-right-top, .uv-scale-right-bottom, .uv-scale-left, .uv-scale-left-top, .uv-scale-left-bottom, .uv-slide-top, .uv-slide-bottom, .uv-slide-left, .uv-slide-right { opacity: 1; transition: 80ms ease-out; }
+
+.uv-scale-top.uv-is-hidden { opacity: 0; transform: scale(0.8) translateY(-15%); }
+
+.uv-scale-top-left.uv-is-hidden { opacity: 0; transform: scale(0.8) translateY(-15%) translateX(-10%); }
+
+.uv-scale-top-right.uv-is-hidden { opacity: 0; transform: scale(0.8) translateY(-15%) translateX(10%); }
+
+.uv-scale-bottom.uv-is-hidden { opacity: 0; transform: scale(0.8) translateY(15%); }
+
+.uv-scale-bottom-left.uv-is-hidden { opacity: 0; transform: scale(0.8) translateY(15%) translateX(-10%); }
+
+.uv-scale-bottom-right.uv-is-hidden { opacity: 0; transform: scale(0.8) translateY(15%) translateX(10%); }
+
+.uv-scale-right.uv-is-hidden { opacity: 0; transform: scale(0.8) translateX(15%); }
+
+.uv-scale-right-top.uv-is-hidden { opacity: 0; transform: scale(0.8) translateX(15%) translateY(-10%); }
+
+.uv-scale-right-bottom.uv-is-hidden { opacity: 0; transform: scale(0.8) translateX(15%) translateY(10%); }
+
+.uv-scale-left.uv-is-hidden { opacity: 0; transform: scale(0.8) translateX(-15%); }
+
+.uv-scale-left-top.uv-is-hidden { opacity: 0; transform: scale(0.8) translateX(-15%) translateY(-10%); }
+
+.uv-scale-left-bottom.uv-is-hidden { opacity: 0; transform: scale(0.8) translateX(-15%) translateY(10%); }
+
+.uv-slide-top.uv-is-hidden { transform: translateY(-100%); }
+
+.uv-slide-bottom.uv-is-hidden { transform: translateY(100%); }
+
+.uv-slide-left.uv-is-hidden { transform: translateX(-100%); }
+
+.uv-slide-right.uv-is-hidden { transform: translateX(100%); }</style><style rel="stylesheet" type="text/css">@charset "utf-8";
+
+.uv-icon:hover { opacity: 1; }</style><style rel="stylesheet" type="text/css">@charset "utf-8";
+
+#uvTab, .uv-tray, .uv-icon, .uv-popover, .uv-bubble { display: none !important; }</style>
+		
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<title>Spielplan ASK Mannersdorf | ligaportal.at - das Portal für Fußball in Österreich</title>
+
+		<link rel="preload" as="style" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+		<link href="https://static.ligaportal.at/fonts/oswald-ticker.css" rel="stylesheet" as="style">
+
+		<link rel="shortcut icon" href="https://static.ligaportal.at/images/ligaportal-favicon-simple.png" type="image/png">
+		<link rel="apple-touch-icon" href="https://static.ligaportal.at/images/ligaportal-touch-icon.png">
+
+		<link rel="preconnect" as="script" href="https://sdk.privacy-center.org/"><link rel="dns-prefetch" as="script" href="https://sdk.privacy-center.org/"><link rel="preload" as="script" href="https://sdk.privacy-center.org/f99e3f18-1a59-4728-b6e7-f56c99678ed5/loader.js?target_type=notice&amp;target=WZmt37rZ"><script type="application/javascript" async="" defer="" src="https://by2.uservoice.com/t2/109651/web/track.js?_=1793130536420&amp;s=0&amp;c=__uvSessionData0&amp;d=eyJ1Ijp7Im8iOjI0MCwiYWNjb3VudCI6e319fQ%3D%3D"></script><script type="application/javascript" async="" defer="" src="https://by2.uservoice.com/t2/109651/web/track.js?_=1793130536419&amp;s=0&amp;c=__uvSessionData0&amp;d=eyJlIjp7InUiOiJodHRwczovL3RpY2tlci5saWdhcG9ydGFsLmF0L21hbm5zY2hhZnQvMTMyMy9hc2stbWFubmVyc2RvcmYvc3BpZWxwbGFuIiwiciI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vIn19"></script><script type="text/javascript" async="" src="https://widget.uservoice.com/s5bYbdbg0fZRnGVOcSR9nw.js"></script><script id="spcloader" type="text/javascript" async="" charset="utf-8" src="https://sdk.privacy-center.org/f99e3f18-1a59-4728-b6e7-f56c99678ed5/loader.js?target_type=notice&amp;target=WZmt37rZ"></script><script type="text/javascript">
+        	var _appRootUri = 'https://ticker.ligaportal.at/';
+		</script>
+
+		
+		<meta name="layout" content="bootstrap/gameCenter">
+		<meta property="lp.article:section" content="ticker">
+		<meta property="lp:type" content="teampage">
+
+		<meta property="og:title" content="Spielplan ASK Mannersdorf | ligaportal.at - das Portal für Fußball in Österreich">
+		
+			
+			<meta name="description" content="ASK Mannersdorf - Ergebnisse, Spielberichte und Kader der Mannschaft aus der Gebietsliga Süd/Südost. Live-Ticker, News und Tabellen für Fußball-Fans von ASK Mannersdorf">
+
+			<meta property="og:description" content="ASK Mannersdorf - Ergebnisse, Spielberichte und Kader der Mannschaft aus der Gebietsliga Süd/Südost. Live-Ticker, News und Tabellen für Fußball-Fans von ASK Mannersdorf">
+		
+		<meta property="og:type" content="sports_team">
+		
+		<link rel="canonical" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/spielplan">
+		<meta property="og:image" content="https://static.ligaportal.at/images/club/club-1207-large.png">
+		
+		
+
+		<link rel="stylesheet" href="https://ticker.ligaportal.at/assets/coreBS-cc8e31906d783eca446d3e569ea8dcd1.css">
+		<link rel="stylesheet" href="https://ticker.ligaportal.at/assets/gameCenterBS-252ba7cafe174f12b5ab6bb7e213978b.css">
+		<link rel="stylesheet" href="https://ticker.ligaportal.at/assets/drillDownBS-2f035e40d766807decc2807281c20652.css">
+
+		<script type="text/javascript" src="https://ticker.ligaportal.at/assets/coreBS-5c8b93453da1814ac31f432e8abf3deb.js"></script>
+		<script type="text/javascript" src="https://ticker.ligaportal.at/assets/gameCenterBS-e4f54b17a16f81314f607d90f1324919.js"></script>
+		<script type="text/javascript" src="https://ticker.ligaportal.at/assets/drillDownBS-a1628c35e8cc85038cc6a46e7169a086.js"></script>
+
+		<script async="" src="https://ced.sascdn.com/tag/1003/smart.js"></script>
+
+<script type="didomi/javascript" data-vendor="smart-adserver">
+    var debug = false;
+    
+    var pageName = 'noe/gebietsliga/gebietsliga-sued-suedost';
+    var showAds = true;
+    var instantRender = true;
+    
+    if(debug){
+        toastr.info('instant: ' + instantRender);
+    }
+
+    var sas_target = 'cat=ticker;club1=;club2=;';
+    
+
+
+    var RY_TAG_URL = 'https://cope-cdn.relevant-digital.com/static/tags/63e25172770f7a026ddba7f8.js';
+    let firstIdPromise;
+
+    function waitForFirstId(timeout = 2000, interval = 50) {
+        if (!firstIdPromise) {
+            if(debug) {
+                toastr.info('[waitForFirstId] Starting, timeout: ' + timeout + 'ms', {timeOut: timeout, extendedTimeOut: 0});
+            }
+            firstIdPromise = new Promise((resolve) => {
+                const start = Date.now();
+                const timer = setInterval(() => {
+                    const elapsed = Date.now() - start;
+                    const isReady = typeof FIRSTID === 'object' &&
+                                    typeof FIRSTID.getFirstIdEidsObject === 'function';
+
+                    if (isReady) {
+                        let firstIdString = 'FirstID Cookie not found';
+                        try {
+                            firstIdString = FIRSTID.getId()
+                        } catch (e) {
+                            // Can return an error if no cookie has been set
+                            if (e.code === 'FirstIdCookieNotFound') {
+                                console.log('First-id cookie not found');
+                            }
+                        }
+                        if(debug) {
+                            toastr.info(firstIdString, '[waitForFirstId] ✅ FIRSTID ready at ' + elapsed + 'ms — injecting RY tag + setting EIDs');
+                        }
+
+                        // FIX 1: inject tag once (guard prevents double-load)
+                        if (!document.querySelector('script[src*="63e25172770f7a026ddba7f8"]')) {
+                            var s = document.createElement('script');
+                            s.src = RY_TAG_URL;
+                            document.head.appendChild(s);
+                            if(debug) {
+                                toastr.info('[waitForFirstId] RY static tag injected');
+                            }
+                        } else if(debug) {
+                            toastr.warning('[waitForFirstId] RY static tag already present — skipping injection');
+                        }
+
+                        if (typeof sas !== 'undefined') {
+                            sas.cmd = sas.cmd || [];
+                            sas.cmd.push(function () {
+                                sas.setEids([{
+                                    source: 'first-id.fr',
+                                    uids: [{ atype: 1, id: FIRSTID._firstId, ext: { linkType: 0 } }]
+                                }]);
+                                if(debug) {
+                                    toastr.success('[waitForFirstId] sas.setEids() pushed');
+                                }
+                            });
+                        } else if(debug) {
+                            toastr.warning('[waitForFirstId] sas not defined — skipping setEids');
+                        }
+
+                        clearInterval(timer);
+                        resolve(true);
+                        return;
+                    }
+
+                    if (elapsed > timeout) {
+                        if(debug) {
+                            toastr.warning('[waitForFirstId] ⚠️ timeout at ' + elapsed + 'ms — continuing without FIRSTID');
+                        }
+                        // inject tag even without FIRSTID — ads load, just no EID enrichment
+                          if (!document.querySelector('script[src*="63e25172770f7a026ddba7f8"]')) {
+                              var s = document.createElement('script');
+                              s.src = RY_TAG_URL;
+                              document.head.appendChild(s);
+                          }
+                        clearInterval(timer);
+                        firstIdPromise = null;
+                        resolve(false); // still continues — ads load without EID enrichment
+                    }
+                }, interval);
+            });
+        }
+        return firstIdPromise;
+    }
+
+    // wait for content to be rendered
+    function waitForRender() {
+        return new Promise((resolve) => {
+            document.addEventListener('content:rendered', resolve, { once: true });
+        });
+        if(debug) {
+            toastr.info('content rendered');
+        }
+    }
+
+    // ── smartRenderCallback ───────────────────────────────────────
+    // Calls sasRender for MMA slots. Only fires after the Prebid
+    // auction has completed (called from onAuctionDone — see loadAds).
+    // ─────────────────────────────────────────────────────────────
+    function smartRenderCallback() {
+        if(debug) {
+            toastr.success('[smartRenderCallback] Fired — checking mma flags');
+        }
+
+        $('[id^="sas_"][data-ad-unit-id]').each(function() {
+          console.log('Found ad slot with FormatID: ' + $(this).data('ad-unit-id'));
+          let formatID = $(this).data('ad-unit-id');
+          if(debug) {
+            toastr.success('[smartRenderCallback] Rendering FormatID: ' + formatID);
+          }
+          relevantDigital.cmd.push(function () { relevantDigital.sasRender(formatID); });
+        });
+    }
+
+    // ── loadAds ───────────────────────────────────────────────────
+    // FIX 2: addAuctionCallbacks registered BEFORE loadPrebid.
+    //   onAuctionDone fires after the full Prebid auction cycle —
+    //   this is the correct point to call sasRender (autoRender:false).
+    //   smartRenderCallback is NO LONGER called from Promise.all.then().
+    // ─────────────────────────────────────────────────────────────
+    function loadAds() {
+        if(debug) {
+            toastr.info('[loadAds] Called');
+        }
+        window.relevantDigital = window.relevantDigital || {};
+        relevantDigital.cmd = relevantDigital.cmd || [];
+
+        relevantDigital.cmd.push(function () {
+            if(debug) {
+                toastr.success('[loadAds] Registering auction callbacks');
+            }
+
+            // FIX 2: sasRender called from onAuctionDone, not from Promise.all.then()
+            relevantDigital.addAuctionCallbacks({
+                onSlotAndUnit: ({ slot, unit }) => {
+                    if(debug) {
+                        toastr.success('[onSlotAndUnit] unit=' + unit.code);
+                    }
+                },
+                onBeforeAdRequest: ({ auction }) => {
+                    if(debug) {
+                        toastr.success('[onBeforeAdRequest] ' + auction.usedUnitDatas.length + ' units in auction');
+                    }
+                },
+                onAuctionDone: ({ auction }) => {
+                    if(debug) {
+                        toastr.success('[onAuctionDone] Auction complete — calling smartRenderCallback');
+                    }
+                    smartRenderCallback();
+                },
+            });
+
+            if(debug) {
+                toastr.info('[loadAds] Calling loadPrebid');
+            }
+            relevantDigital.loadPrebid({
+                sasOptions: {
+                    autoRender: false,          // publisher controls render timing via sasRender()
+                    siteId: 84169,
+                    callParams: { pageName: pageName, target: sas_target }
+                },
+                configId: '696521a7e38888b657f7ba92',
+                manageAdserver: true,
+                noSlotReload: false,
+                noGpt: true,
+            });
+            if(debug) {
+                toastr.info('[ TEST loadAdsInit]');
+            }
+        });
+        if(debug) {
+            toastr.success('[TEST smartRenderCallback Done]');
+        }
+    }
+
+    // ── Orchestration ─────────────────────────────────────────────
+    // Wait for BOTH content:rendered (MMA divs in DOM) AND FIRSTID
+    // (or its timeout) before starting the auction.
+    // FIX 2: smartRenderCallback removed from here — it now lives
+    //         inside onAuctionDone above.
+    // ─────────────────────────────────────────────────────────────
+    Promise.all([
+        waitForRender(),
+        waitForFirstId(),
+    ]).then(([renderReady, firstIdReady]) => {
+        if(debug) {
+            toastr.success('[Promise.all] Resolved — render=' + !!renderReady + ' firstId=' + firstIdReady);
+        }
+        loadAds();
+    });
+
+    if(instantRender) {
+        document.dispatchEvent(new Event('content:rendered'));
+    }
+</script>
+
+		<!-- begin preload of INFOnline Measurement Manager (web) -->
+<link rel="preload" href="https://data-10e222a818.ligaportal.at/iomm/latest/manager/base/es6/bundle.js" as="script" id="IOMmBundle" crossorigin="">
+<link rel="preload" href="https://data-10e222a818.ligaportal.at/iomm/latest/bootstrap/loader.js" as="script" crossorigin="">
+<!-- end preload of INFOnline Measurement Manager (web) -->
+<!-- begin loading of IOMm bootstrap code -->
+<script type="text/javascript" src="https://data-10e222a818.ligaportal.at/iomm/latest/bootstrap/loader.js" crossorigin=""></script>
+<!-- end loading of IOMm bootstrap code -->
+
+		<!-- Marfeel -->
+<script type="didomi/javascript" data-vendor="qzdVtYGK">
+!function(){"use strict";function e(e){var t=!(arguments.length>1&&void 0!==arguments[1])||arguments[1],c=document.createElement("script");c.src=e,t?c.type="module":(c.async=!0,c.type="text/javascript",c.setAttribute("nomodule",""));var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(c,n)}!function(t,c){!function(t,c,n){var a,o,r;n.accountId=c,null!==(a=t.marfeel)&&void 0!==a||(t.marfeel={}),null!==(o=(r=t.marfeel).cmd)&&void 0!==o||(r.cmd=[]),t.marfeel.config=n;var i="https://sdk.mrf.io/statics";e("".concat(i,"/marfeel-sdk.js?id=").concat(c),!0),e("".concat(i,"/marfeel-sdk.es5.js?id=").concat(c),!1)}(t,c,arguments.length>2&&void 0!==arguments[2]?arguments[2]:{})}(window,11843,{} /* Config */)}();
+</script>
+
+	
+
+		<meta property="og:site_name" content="ligaportal.at Live-Ticker Center">
+        <meta property="fb:admins" content="1593460561,100002278831255">
+		<meta name="google-site-verification" content="Yyh0as26m9eGVDTOD-RuZFOmGh4o0M0VfNXHB2LxIFA">
+		
+		
+
+		<!-- didomi CMP -->
+<script type="text/javascript">
+    window.didomiConfig = {
+        theme: {
+            color: '#f7941d', // Principal color
+            linkColor: '#004e89',
+            font: 'Titillium Web',
+            buttons: {
+                regularButtons: { // Learn more/disagree/disagree to all buttons.
+                    backgroundColor: '#ffffff',
+                    textColor: '#005ea7',
+                    borderColor: '#005ea7',
+                    borderWidth: '1px',
+                    borderRadius: '6px'
+                },
+                highlightButtons: { // Agree/save/agree to all buttons.
+                    backgroundColor: '#005ea7',
+                    textColor: '#ffffff',
+                    borderColor: '#005ea7',
+                    borderWidth: '1px',
+                    borderRadius: '6px'
+                }
+            }
+        },
+        user: {
+            bots: {
+                consentRequired: false,
+                types: ['crawlers', 'performance'],
+                extraUserAgents: [],
+            }
+        },
+        cookies: {
+            storageSources: {
+                cookies: false,
+                localStorage: true
+            }
+        }
+    };
+</script>
+<script type="text/javascript">window.gdprAppliesGlobally=true;(function(){function n(e){if(!window.frames[e]){if(document.body&&document.body.firstChild){var t=document.body;var r=document.createElement("iframe");r.style.display="none";r.name=e;r.title=e;t.insertBefore(r,t.firstChild)}else{setTimeout(function(){n(e)},5)}}}function e(r,a,o,c,d){function e(e,t,r,n){if(typeof r!=="function"){return}if(!window[a]){window[a]=[]}var i=false;if(d){i=d(e,n,r)}if(!i){window[a].push({command:e,version:t,callback:r,parameter:n})}}e.stub=true;e.stubVersion=2;function t(n){if(!window[r]||window[r].stub!==true){return}if(!n.data){return}var i=typeof n.data==="string";var e;try{e=i?JSON.parse(n.data):n.data}catch(t){return}if(e[o]){var a=e[o];window[r](a.command,a.version,function(e,t){var r={};r[c]={returnValue:e,success:t,callId:a.callId};if(n.source){n.source.postMessage(i?JSON.stringify(r):r,"*")}},a.parameter)}}if(typeof window[r]!=="function"){window[r]=e;if(window.addEventListener){window.addEventListener("message",t,false)}else{window.attachEvent("onmessage",t)}}}e("__tcfapi","__tcfapiBuffer","__tcfapiCall","__tcfapiReturn");n("__tcfapiLocator");(function(e,t){var r=document.createElement("link");r.rel="preconnect";r.as="script";var n=document.createElement("link");n.rel="dns-prefetch";n.as="script";var i=document.createElement("link");i.rel="preload";i.as="script";var a=document.createElement("script");a.id="spcloader";a.type="text/javascript";a["async"]=true;a.charset="utf-8";var o="https://sdk.privacy-center.org/"+e+"/loader.js?target_type=notice&target="+t;if(window.didomiConfig&&window.didomiConfig.user){var c=window.didomiConfig.user;var d=c.country;var s=c.region;if(d){o=o+"&country="+d;if(s){o=o+"&region="+s}}}r.href="https://sdk.privacy-center.org/";n.href="https://sdk.privacy-center.org/";i.href=o;a.src=o;var f=document.getElementsByTagName("script")[0];f.parentNode.insertBefore(r,f);f.parentNode.insertBefore(n,f);f.parentNode.insertBefore(i,f);f.parentNode.insertBefore(a,f)})("f99e3f18-1a59-4728-b6e7-f56c99678ed5","WZmt37rZ")})();</script>
+		
+
+		<script src="https://creatives.sascdn.com/diff/8/advertiser/496405/sdo_temp_202311_c782051b-965b-4654-a929-5b28a77b6252/v1.6/sdo_sas.js" type="application/javascript" async=""></script>
+
+		
+
+		
+
+		<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+		  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+		  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+		
+        
+	<script>
+        function statusChangeCallback(response) {
+
+            if (response.status === 'connected') {
+                testAPI();
+            } else if (response.status === 'not_authorized') {
+
+            } else {
+
+            }
+        }
+
+        function checkLoginState() {
+            // spinner
+            $('.fb-login-button').append('<span class="ml-2 mb-2"><i class="fas fa-circle-notch fa-spin fb-spinner"></i></span>');
+            //$('.fb-login-container').append('<i class="fas fa-circle-notch fa-spin fb-spinner"></i>');
+
+            FB.getLoginStatus(function(response) {
+                statusChangeCallback(response);
+            });
+        }
+
+
+        function testAPI() {
+            FB.api('/me', function(response) {
+                var access_token = FB.getAuthResponse()['accessToken'];
+                useReturnData(access_token);
+            });
+        }
+
+        function useReturnData(token) {
+            FB.api('/me', {fields: 'email, first_name, last_name, link, name'}, function(response) {
+
+                console.log(response);
+
+                var access_token = FB.getAuthResponse()['accessToken'];
+                var access_token_expires = FB.getAuthResponse()['data_access_expiration_time'];
+                var userId =  FB.getAuthResponse()['userID'];
+
+                //console.log(token);
+                //console.log(access_token);
+
+                $.ajax({
+                    type: "GET",
+                    dataType: 'json',
+                    url:"/connect/accessToken",
+                    data: {
+                        userId: userId,
+                        accesToken: token,
+                        email: response.email,
+                        first_name: response.first_name,
+                        last_name: response.last_name,
+                        //gender: response.gender,
+                        link: response.link,
+                        //locale: response.locale,
+                        name: response.name
+
+                    },
+                    success: function(data) {
+                        //console.log(data.url);
+                        Cookies.remove('lp_fblogin', { path: '/' });
+                        Cookies.set('lp_fblogin', access_token_expires, {expires: 60, path: '/'});
+                        toastr.success('Anmeldung erfolgreich! Du wirst automatisch weitergeleitet...');
+                        $('.fb-spinner').removeClass('fa-circle-notch').removeClass('fa-spin').addClass('fa-check-circle text-success')
+                        setTimeout(function() {
+                            refreshSite(data.url);
+                        }, 350);
+                    }, error: function(data) {
+                        toastr.error('Anmeldung über Facebook abgebrochen, leider ist etwas schiefgelaufen!');
+                        $('.fb-spinner').remove();
+                        $( "#fb-login-error-dialog" ).modal('show');
+                        console.log("Anmeldung über Facebook abgebrochen, leider ist etwas schiefgelaufen!")
+                    }
+                });
+
+            });
+        }
+
+        function refreshSite(url) {
+
+            if(url == "false") {
+                //location.reload(true);
+                jQuery(location).attr('href','/');
+            } else {
+                jQuery(location).attr('href',url);
+            }
+        }
+
+        $( document ).ready(function() {
+            setTimeout(function() {
+                if (Cookies.get('lp_fblogin')) {
+                    Cookies.remove('lp_fblogin', { path: '/' });
+                }
+            }, 1500);
+        });
+	</script>
+
+
+
+	</head>
+	<body><div name="__tcfapiLocator" title="__tcfapiLocator" style="display: none;" data-original-tag="iframe"></div>
+
+		
+			<div class="skyscraper">
+    <div id="sas_22375" data-ad-unit-id="22375"></div>
+    
+</div>
+		
+
+		<div id="page" class="container px-0 px-md-2 pt-2">
+
+			<div id="header" class="row">
+				
+				
+					<div class="col-sm-12">
+						<nav class="navbar navbar-expand-lg  navbar-inverse bg-dark pb-1 pb-md-2">
+
+    <button class="navbar-toggler text-white" type="button" data-toggle="collapse" data-target="#headerNavBar" aria-controls="headerNavBar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="fas fa-bars"></span>
+    </button>
+
+    
+
+    <div id="headerNavBar" class="collapse navbar-collapse">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item"><a class="nav-link py-1" href="https://www.ligaportal.at/" title="Fußball Österreich"><span class="fas fa-home d-none d-lg-inline mr-1"></span><span class="d-inline d-lg-none">Ligaportal Startseite</span></a></li>
+            <li class="nav-item"><a class="nav-link py-1" href="https://ticker.ligaportal.at/" style="border-left:none;">Live-Ticker</a></li>
+            <li class="nav-item dropdown">
+                
+                <a href="https://ticker.ligaportal.at/spiele-finden" class="nav-link py-1 dropdown-toggle" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Spiele finden
+                </a>
+                
+                
+                <div class="dropdown-menu shadow">
+                    <a href="https://ticker.ligaportal.at/spiele-finden?type=1" class="dropdown-item"><i class="fas fa-male text-muted pl-1 mr-2"></i>Männer</a>
+                    <a href="https://ticker.ligaportal.at/spiele-finden?type=2" class="dropdown-item"><i class="fas fa-male text-muted pl-1 mr-2"></i>Reserve</a>
+                    <a href="https://ticker.ligaportal.at/spiele-finden?type=3" class="dropdown-item"><i class="fas fa-female text-muted pl-1 mr-2"></i>Frauen</a>
+                    <a href="https://ticker.ligaportal.at/spiele-finden?type=4" class="dropdown-item"><i class="fas fa-child text-muted mr-2"></i>Nachwuchs</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="https://ticker.ligaportal.at/meistgesehene-spiele" class="dropdown-item" title="Meistgesehene Spiele"><i class="fas fa-chart-line text-muted mr-2"></i>Meistgesehene</a>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a href="https://ticker.ligaportal.at/meine-spiele" class="nav-link py-1">Meine Spiele</a>
+            </li>
+            
+            <li class="nav-item dropdown">
+                
+                    <a class="nav-link py-1 dropdown-toggle" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/spielplan#" id="tickernDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Tickern
+                    </a>
+                
+                
+                <div class="dropdown-menu shadow" aria-labelledby="tickernDropdown">
+                    <a href="https://ticker.ligaportal.at/reporter-rangliste" class="dropdown-item"><i class="fas fa-trophy text-muted mr-2"></i>Reporter-Rangliste</a>
+                    <a href="https://ticker.ligaportal.at/demo" class="dropdown-item"><i class="fas fa-user-shield text-muted mr-2"></i>Demospiel</a>
+                    <a href="https://www.ligaportal.at/fussball-app/" class="dropdown-item" target="_blank"><i class="fas fa-mobile-alt px-1 text-muted mr-2"></i>Handy App</a>
+                    
+                    
+                </div>
+            </li>
+            
+        </ul>
+        <ul class="navbar-nav mr-0">
+            
+            
+            
+            
+                <li class="nav-item">
+                    <a href="https://ticker.ligaportal.at/mein-profil" class="nav-link py-1">Mein Profil</a>
+                </li>
+            
+        </ul>
+    </div>
+</nav>
+					</div>
+				
+			</div>
+
+			<nav class="navbar navbar-expand-lg mb-2 mt-md-2 pt-1 pt-md-2 px-2 px-md-3">
+    
+        <a class="navbar-brand my-1 mr-auto" href="https://ticker.ligaportal.at/">
+            ​<picture>
+                <source srcset="https://static.ligaportal.at/images/ligaportal-logo-noclaim.svg" type="image/svg+xml">
+                <img src="https://static.ligaportal.at/images/ligaportal-noclaim.png" alt="Ligaportal" height="36">
+            </picture>
+        </a>
+    
+
+    <div class="btn-toolbar d-lg-flex mb-3 mb-lg-0 collapse" role="toolbar" id="search-toolbar">
+        <div class="input-group mx-0 mr-md-3" id="bloodhound">
+            <input type="text" name="searchTerm" id="searchTerm" class="form-control typeahead d-block d-md-inline" data-provide="typeahead" placeholder="Suche ..." autocomplete="off">
+            <div class="input-group-append d-none d-md-flex">
+                <div class="input-group-text bg-white"><i class="fas fa-search"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="btn-toolbar" role="toolbar">
+        <div class="btn-group mr-2 mr-sm-3" role="group" id="provincesNav" aria-label="Pick competition">
+            <button data-url="/navigation/navigationTreeFull" data-toggle="modal" data-target="#pickLeagueModal" class="btn btn-orange">
+                <i class="fas fa-shield-alt"></i> Liga auswählen
+            </button>
+        </div>
+    </div>
+    <div class="btn-toolbar" role="toolbar">
+        <div class="btn-group mr-2 mr-sm-3" role="group" aria-label="Mute button">
+            
+                <button id="muteButton" type="button" class="btn btn-outline-secondary" data-toggle="tooltip" data-placement="bottom" title="Toralarm in dieser Ansicht nicht verfügbar" aria-label="Toralarm ein/aus schalten"><i class="fas fa-bell-slash"></i></button>
+            
+            
+        </div>
+        <div class="btn-group" role="group">
+            
+            
+                <button id="userGroupDrop" type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-user-circle"></i> <span class="d-none d-lg-inline">Anmelden</span>
+                </button>
+            
+            <div class="dropdown-menu dropdown-menu-right shadow" aria-labelledby="userGroupDrop">
+                
+                
+                    <a href="https://ticker.ligaportal.at/login/auth" class="dropdown-item"><i class="fas fa-sign-in-alt mr-2 text-muted"></i>Einloggen</a>
+                    <a href="https://ticker.ligaportal.at/registrieren" class="dropdown-item"><i class="fas fa-user-plus mr-2 text-muted"></i>Registrieren</a>
+                    <!--<div class="dropdown-divider"></div>-->
+                
+            </div>
+        </div>
+    </div>
+</nav>
+
+			
+				<div class="bs_center text-center">
+					<div id="sas_22374" data-ad-unit-id="22374"></div>
+
+					
+<div id="sas_23170" class="billboard-belownav" data-ad-unit-id="23170"></div>
+
+
+				</div>
+			
+
+			
+		<script type="text/javascript">
+    IOMm('configure', { st: 'at_w_atliportal', dn: 'data-10e222a818.ligaportal.at', cn: 'at', mh:5}); // Configure IOMm
+    IOMm('pageview', { cp: 'RedCont/Sport/Fussball' }); // Count pageview
+</script>
+
+		
+
+		
+
+		<div class="row">
+
+			<div class="col-sm-12 col-lg-8 area-left">
+
+				<div class="card card-team team mb-3">
+					<div class="card-header bg-white text-oswald px-2 px-md-3">
+						<div class="row">
+							<div class="col-6 pr-0 text-truncate">
+								
+	<a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost" title="Spielplan Gebietsliga Süd/Südost" class="text-secondary text-nowrap h1-competition ">
+		<i class="fas fa-chevron-left mr-1 pl-3 pr-2"></i>
+		Gebietsliga Süd/Südost
+	</a>
+
+							</div>
+							<div class="col-6 pl-0 text-right">
+								
+									<a href="https://ticker.ligaportal.at/verein/1207/mannersdorf-ask/betreuer" class="btn btn-sm btn-success">
+										<i class="fas fa-user-shield mr-2 d-none d-md-inline"></i>Vereinsbetreuer werden
+									</a>
+								
+								
+							</div>
+						</div>
+					</div>
+
+					<div class="card-body px-2 px-md-3 pb-0">
+
+						<div class="row">
+    <div class="clubLogoLarge col-12 col-md-3 mb-3 text-center">
+		<div class="img-fluid">
+        	<img src="https://static.ligaportal.at/images/team/team-1323-large.png" lazy="true" alt="Team - ASK Mannersdorf" class="img-fluid lazy" https="null" style="opacity: 0.765256;">
+		</div>
+		<div class="fanWidget mt-3">
+			
+	<div class="fanWidget">
+		<span class="fanWidgetBecomeFan btn-group btn-group-sm mt-0">
+			<button class="fanWidgetDummyLink btn btn-sm btn-primary"><i class="far fa-heart mr-1"></i> Fan werden</button>
+		</span>
+	</div>
+	<script type="text/javascript">
+		$('.fanWidgetDummyLink').click(function(event) {
+			event.preventDefault();
+			toastr.warning('Bitte melde Dich an, um Fan dieses Vereins zu werden: <div class="pt-3"><a href="/login/auth" class="btn btn-outline-light mx-2">Einloggen</a><a href="/registrieren" class="btn btn-outline-light mx-2">Registrieren</a></div>', 'Anmeldung erforderlich!');
+		});
+	</script>
+
+
+		</div>
+    </div>
+    <div class="profileHeader col-12 col-md-9 text-center text-md-left mb-3">
+        <h1 class="text-blue-darker text-nowrap text-truncate" title="ASK Mannersdorf">ASK Mannersdorf</h1>
+		<div class="list-group list-group-flush">
+			
+				<a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost" class="list-group-item list-group-item-action px-md-1 championship">
+					<div class="row">
+						<div class="col-11 col-md-10 text-nowrap text-truncate">
+							Gebietsliga Süd/Südost
+							
+						</div>
+						<div class="col-1 col-md-2 px-0 px-md-3">
+							<i class="fas fa-chevron-right text-muted float-right py-1 px-2"></i>
+						</div>
+					</div>
+				</a>
+				
+					
+					<div class="list-group-item px-md-1 currentRank text-secondary">10. Tabellenrang</div>
+				
+				<a href="https://ticker.ligaportal.at/verein/1207/mannersdorf-ask" class="list-group-item list-group-item-action px-md-1 club" title="ASK Mannersdorf">
+					<div class="row">
+						<div class="col-11 col-md-10 text-nowrap text-truncate">
+							
+								Verein: ASK Mannersdorf
+							
+							
+						</div>
+						<div class="col-1 col-md-2 px-0 px-md-3">
+							<i class="fas fa-chevron-right text-muted float-right py-1 px-2"></i>
+						</div>
+					</div>
+				</a>
+				
+					<div class="list-group-item px-md-1 province text-secondary">Niederösterreich</div>
+				
+			
+		</div>
+    </div>
+</div>
+
+	
+	<div class="row">
+		<div class="col-12 col-md-5 mb-3 pr-md-1">
+			
+				
+			
+			
+			
+				<a href="https://ticker.ligaportal.at/subscription/subscribeToTeam/1323" class="toolButton btn btn-sm btn-block btn-outline-primary subscribe" title="Verpasse kein Ergebnis mehr!" rel="nofollow">
+					<i class="fas fa-paper-plane mr-2"></i> Ergebnisdienst abonnieren
+				</a>
+			
+		</div>
+		<div class="col-12 col-md-7 mb-3 px-md-1">
+			<div class="shariff" data-url="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" data-title="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" data-mail-url="mailto:" data-mail-body="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" data-orientation="horizontal" data-services="[&quot;facebook&quot;,&quot;twitter&quot;,&quot;twitter&quot;mail]"><ul class="theme-color orientation-horizontal button-style-standard shariff-col-36"><li class="shariff-button facebook"><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fticker.ligaportal.at%2Fmannschaft%2F1323%2Fask-mannersdorf" data-rel="popup" rel="nofollow" title="Bei Facebook teilen" role="button" aria-label="Bei Facebook teilen"><span class="fab fa-facebook-f"></span><span class="share_text">teilen</span></a></li><li class="shariff-button twitter"><a href="https://twitter.com/intent/tweet?text=https%3A%2F%2Fticker.ligaportal.at%2Fmannschaft%2F1323%2Fask-mannersdorf&amp;url=https%3A%2F%2Fticker.ligaportal.at%2Fmannschaft%2F1323%2Fask-mannersdorf" data-rel="popup" rel="nofollow" title="Bei Twitter teilen" role="button" aria-label="Bei Twitter teilen"><span class="fab fa-twitter"></span><span class="share_text">tweet</span></a></li><li class="shariff-button mail"><a href="mailto:?subject=https%3A%2F%2Fticker.ligaportal.at%2Fmannschaft%2F1323%2Fask-mannersdorf&amp;body=https%3A%2F%2Fticker.ligaportal.at%2Fmannschaft%2F1323%2Fask-mannersdorf" rel="nofollow" title="Per E-Mail versenden" role="button" aria-label="Per E-Mail versenden"><span class="fas fa-envelope"></span><span class="share_text">mail</span></a></li></ul></div>
+		</div>
+	</div>
+
+
+
+
+	<div id="sub-pages" class="mb-4">
+		<ul class="nav nav-tabs">
+			<li class="nav-item"><a href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" class="nav-link text-oswald ">Mannschaft<span class="d-none"> ASK Mannersdorf</span></a></li>
+			
+				
+					<li class="nav-item"><a href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/beitraege" title="News ASK Mannersdorf" class="nav-link text-oswald text-blue">News<span class="d-none"> ASK Mannersdorf</span></a></li>
+				
+				
+					<li class="nav-item"><a href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/spielplan" title="Spielplan ASK Mannersdorf" class="nav-link text-oswald active">Spielplan<span class="d-none"> ASK Mannersdorf</span></a></li>
+					<li class="nav-item"><a href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/tabelle" title="Tabelle ASK Mannersdorf" class="nav-link text-oswald text-blue">Tabelle<span class="d-none"> ASK Mannersdorf</span></a></li>
+				
+				
+					<li class="nav-item"><a href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/kader" title="Kader ASK Mannersdorf" class="nav-link text-oswald text-blue" rel="nofollow">Kader<span class="d-none"> ASK Mannersdorf</span></a></li>
+				
+				
+					<li class="nav-item">
+						<a href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/videos" title="Videos ASK Mannersdorf" class="nav-link text-oswald text-blue">
+							Videos<span class="d-none"> ASK Mannersdorf</span> <span class="badge badge-light text-sanserif">9</span>
+						</a>
+					</li>
+				
+				<li class="nav-item"><a href="https://ticker.ligaportal.at/verein/1207/mannersdorf-ask/sponsoren" class="nav-link text-oswald text-blue">Sponsoren<span class="d-none"> ASK Mannersdorf</span></a></li>
+			
+			
+		</ul>
+	</div>
+
+
+
+					</div>
+					<div class="card-body px-0 px-md-3 pb-0 pb-md-3 pt-0">
+
+						<!-- SPIELPLAN  -->
+						
+							<section class="mb-4 mb-md-5">
+                                <h3 class="text-nowrap text-truncate px-2 px-md-0">
+                                    <a href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/spielplan" title="Spielplan ASK Mannersdorf" class="text-blue-dark">
+                                        Spielplan <span>ASK Mannersdorf</span>
+                                    </a>
+                                </h3>
+                                <table class="table teamSchedule">
+    <tbody>
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 14.08.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275414" title="Gebietsliga Süd/Südost • Runde 1" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 1
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameLost">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                1:2
+                            
+                        </strong>
+                        <small class="d-block">
+                            (0:2)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/club/club-1376-small.png" lazy="true" alt="Team - ASK Bad Fischau-Brunn" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1492" href="https://ticker.ligaportal.at/mannschaft/1492/bad-fischau" title="ASK Bad Fischau-Brunn">
+                    
+                    
+                        
+                            Bad Fischau-Brunn
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271229/ask-mannersdorf-gegen-bad-fischau" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf ASK Mannersdorf - ASK Bad Fischau-Brunn im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 21.08.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275415" title="Gebietsliga Süd/Südost • Runde 2" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 2
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameWon">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1332" href="https://ticker.ligaportal.at/mannschaft/1332/maria-lanzendorf" title="SC Maria Lanzendorf">
+                    
+                    
+                        
+                            Maria Lanzendorf
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/club/club-1216-small.png" lazy="true" alt="Team - SC Maria Lanzendorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                1:2
+                            
+                        </strong>
+                        <small class="d-block">
+                            (1:0)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271236/maria-lanzendorf-gegen-ask-mannersdorf" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf SC Maria Lanzendorf - ASK Mannersdorf im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 28.08.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275416" title="Gebietsliga Süd/Südost • Runde 3" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 3
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameLost">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                0:2
+                            
+                        </strong>
+                        <small class="d-block">
+                            (0:1)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/club/club-1326-small.png" lazy="true" alt="Team - SC Wolfsthal" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1442" href="https://ticker.ligaportal.at/mannschaft/1442/sc-wolfsthal" title="SC Wolfsthal">
+                    
+                    
+                        
+                            SC Wolfsthal
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271242/ask-mannersdorf-gegen-sc-wolfsthal" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf ASK Mannersdorf - SC Wolfsthal im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Sa., 05.09.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275417" title="Gebietsliga Süd/Südost • Runde 4" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 4
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameWon">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1585" href="https://ticker.ligaportal.at/mannschaft/1585/bsv-enzesfeld-hirtenberg" title="BSV Enzesfeld/H.">
+                    
+                    
+                        
+                            BSV Enzesfeld/H.
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1585-small.png" lazy="true" alt="Team - BSV Enzesfeld/H." height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                0:4
+                            
+                        </strong>
+                        <small class="d-block">
+                            (0:2)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271249/bsv-enzesfeld-hirtenberg-gegen-ask-mannersdorf" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf BSV Enzesfeld/H. - ASK Mannersdorf im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Sa., 12.09.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275418" title="Gebietsliga Süd/Südost • Runde 5" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 5
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameLost">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                1:3
+                            
+                        </strong>
+                        <small class="d-block">
+                            (0:1)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/club/club-1208-small.png" lazy="true" alt="Team - SC Sommerein" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1324" href="https://ticker.ligaportal.at/mannschaft/1324/sc-sommerein" title="SC Sommerein">
+                    
+                    
+                        
+                            SC Sommerein
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271260/ask-mannersdorf-gegen-sc-sommerein" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf ASK Mannersdorf - SC Sommerein im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 18.09.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275419" title="Gebietsliga Süd/Südost • Runde 6" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 6
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameLost">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1348" href="https://ticker.ligaportal.at/mannschaft/1348/svg-breitenau" title="SVg Breitenau/Schwarzau">
+                    
+                    
+                        
+                            SVg Breitenau
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/club/club-1232-small.png" lazy="true" alt="Team - SVg Breitenau/Schwarzau" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                4:0
+                            
+                        </strong>
+                        <small class="d-block">
+                            (1:0)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271263/svg-breitenau-gegen-ask-mannersdorf" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf SVg Breitenau/Schwarzau - ASK Mannersdorf im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 25.09.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275420" title="Gebietsliga Süd/Südost • Runde 7" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 7
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameWon">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                6:0
+                            
+                        </strong>
+                        <small class="d-block">
+                            (2:0)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/team/team-1633-small.png" lazy="true" alt="Team - SV Grimmenstein" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1633" href="https://ticker.ligaportal.at/mannschaft/1633/sv-grimmenstein" title="SV Grimmenstein">
+                    
+                    
+                        
+                            SV Grimmenstein
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271274/ask-mannersdorf-gegen-sv-grimmenstein" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf ASK Mannersdorf - SV Grimmenstein im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Sa., 03.10.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275421" title="Gebietsliga Süd/Südost • Runde 8" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 8
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameLost">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1201" href="https://ticker.ligaportal.at/mannschaft/1201/1-wiener-neustaedter-sc-juniors" title="SC Fortuna Wiener Neustadt II">
+                    
+                    
+                        
+                            Fortuna Wiener Neusta…
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1201-small.png" lazy="true" alt="Team - SC Fortuna Wiener Neustadt II" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                2:0
+                            
+                        </strong>
+                        <small class="d-block">
+                            (2:0)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271281/1-wiener-neustaedter-sc-juniors-gegen-ask-mannersdorf" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf SC Fortuna Wiener Neustadt II - ASK Mannersdorf im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 09.10.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275422" title="Gebietsliga Süd/Südost • Runde 9" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 9
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameRemis">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                2:2
+                            
+                        </strong>
+                        <small class="d-block">
+                            (0:1)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/club/club-1222-small.png" lazy="true" alt="Team - Eggendorf ASK" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1338" href="https://ticker.ligaportal.at/mannschaft/1338/ask-eggendorf" title="ASK Eggendorf">
+                    
+                    
+                        
+                            ASK Eggendorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271286/ask-mannersdorf-gegen-ask-eggendorf" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf ASK Mannersdorf - ASK Eggendorf im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 18.10.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275423" title="Gebietsliga Süd/Südost • Runde 10" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 10
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameWon">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1232" href="https://ticker.ligaportal.at/mannschaft/1232/sc-weissenbach" title="SG Weissenbach/Klausen-L./A.">
+                    
+                    
+                        
+                            Weissenbach/Klausen-L…
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/club/club-1116-small.png" lazy="true" alt="Team - SC Weissenbach" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                1:4
+                            
+                        </strong>
+                        <small class="d-block">
+                            (1:2)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271295/sc-weissenbach-gegen-ask-mannersdorf" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf SG Weissenbach/Klausen-L./A. - ASK Mannersdorf im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 23.10.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275424" title="Gebietsliga Süd/Südost • Runde 11" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 11
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameRemis">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1325" href="https://ticker.ligaportal.at/mannschaft/1325/sc-himberg" title="SC Himberg">
+                    
+                    
+                        
+                            SC Himberg
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1325-small.png" lazy="true" alt="Team - SC Himberg" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    <button class="btn btn-sm btn-block btn-secondary disabled d-inline-block px-1 px-md-2">
+                        <strong>
+                            
+                                1:1
+                            
+                        </strong>
+                        <small class="d-block">
+                            (0:0)
+                        </small>
+                    </button>
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				<a href="https://ticker.ligaportal.at/live-ticker/1271297/sc-himberg-gegen-ask-mannersdorf" data-color="danger" class="bttnRed btn btn-sm btn-danger-light w-100" title="Spielverlauf SC Himberg - ASK Mannersdorf im Live-Ticker ansehen " target="">
+					
+						<span>Details</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					
+				</a>
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Sa., 31.10.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275425" title="Gebietsliga Süd/Südost • Runde 12" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 12
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    17:00
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/team/team-1203-small.png" lazy="true" alt="Team - ASV Vösendorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1203" href="https://ticker.ligaportal.at/mannschaft/1203/asv-voesendorf" title="ASV Vösendorf">
+                    
+                    
+                        
+                            ASV Vösendorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271307/ask-mannersdorf-gegen-asv-voesendorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Mannersdorf - ASV Vösendorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 06.11.2026</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275426" title="Gebietsliga Süd/Südost • Runde 13" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 13
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img src="https://static.ligaportal.at/images/team/team-1323-small.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    19:30
+                
+            </td>
+            <td class="team text-left">
+                <img src="https://static.ligaportal.at/images/club/club-1111-small.png" lazy="true" alt="Team - USC Kirchschlag/BW " height="16" width="16" https="null" class="lazy" style="opacity: 0.762587;">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1227" href="https://ticker.ligaportal.at/mannschaft/1227/usc-kirchschlag" title="USC Kirchschlag">
+                    
+                    
+                        
+                            USC Kirchschlag
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271311/ask-mannersdorf-gegen-usc-kirchschlag" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Mannersdorf - USC Kirchschlag im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 21.03.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275427" title="Gebietsliga Süd/Südost • Runde 14" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 14
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1492" href="https://ticker.ligaportal.at/mannschaft/1492/bad-fischau" title="ASK Bad Fischau-Brunn">
+                    
+                    
+                        
+                            Bad Fischau-Brunn
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/club/club-1376-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Bad Fischau-Brunn" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    15:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271320/bad-fischau-gegen-ask-mannersdorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Bad Fischau-Brunn - ASK Mannersdorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 28.03.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275428" title="Gebietsliga Süd/Südost • Runde 15" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 15
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    16:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/club/club-1216-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - SC Maria Lanzendorf" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1332" href="https://ticker.ligaportal.at/mannschaft/1332/maria-lanzendorf" title="SC Maria Lanzendorf">
+                    
+                    
+                        
+                            Maria Lanzendorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271328/ask-mannersdorf-gegen-maria-lanzendorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Mannersdorf - SC Maria Lanzendorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 04.04.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275429" title="Gebietsliga Süd/Südost • Runde 16" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 16
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1442" href="https://ticker.ligaportal.at/mannschaft/1442/sc-wolfsthal" title="SC Wolfsthal">
+                    
+                    
+                        
+                            SC Wolfsthal
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/club/club-1326-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - SC Wolfsthal" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    16:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271335/sc-wolfsthal-gegen-ask-mannersdorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau SC Wolfsthal - ASK Mannersdorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 11.04.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275430" title="Gebietsliga Süd/Südost • Runde 17" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 17
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    16:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1585-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - BSV Enzesfeld/H." height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1585" href="https://ticker.ligaportal.at/mannschaft/1585/bsv-enzesfeld-hirtenberg" title="BSV Enzesfeld/H.">
+                    
+                    
+                        
+                            BSV Enzesfeld/H.
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271341/ask-mannersdorf-gegen-bsv-enzesfeld-hirtenberg" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Mannersdorf - BSV Enzesfeld/H. im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 18.04.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275431" title="Gebietsliga Süd/Südost • Runde 18" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 18
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1324" href="https://ticker.ligaportal.at/mannschaft/1324/sc-sommerein" title="SC Sommerein">
+                    
+                    
+                        
+                            SC Sommerein
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/club/club-1208-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - SC Sommerein" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    16:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271349/sc-sommerein-gegen-ask-mannersdorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau SC Sommerein - ASK Mannersdorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 25.04.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275432" title="Gebietsliga Süd/Südost • Runde 19" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 19
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    16:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/club/club-1232-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - SVg Breitenau/Schwarzau" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1348" href="https://ticker.ligaportal.at/mannschaft/1348/svg-breitenau" title="SVg Breitenau/Schwarzau">
+                    
+                    
+                        
+                            SVg Breitenau
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271353/ask-mannersdorf-gegen-svg-breitenau" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Mannersdorf - SVg Breitenau/Schwarzau im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 02.05.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275433" title="Gebietsliga Süd/Südost • Runde 20" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 20
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1633" href="https://ticker.ligaportal.at/mannschaft/1633/sv-grimmenstein" title="SV Grimmenstein">
+                    
+                    
+                        
+                            SV Grimmenstein
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/team/team-1633-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - SV Grimmenstein" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    16:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271363/sv-grimmenstein-gegen-ask-mannersdorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau SV Grimmenstein - ASK Mannersdorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 09.05.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275434" title="Gebietsliga Süd/Südost • Runde 21" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 21
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    16:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1201-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - SC Fortuna Wiener Neustadt II" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1201" href="https://ticker.ligaportal.at/mannschaft/1201/1-wiener-neustaedter-sc-juniors" title="SC Fortuna Wiener Neustadt II">
+                    
+                    
+                        
+                            Fortuna Wiener Neusta…
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271368/ask-mannersdorf-gegen-1-wiener-neustaedter-sc-juniors" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Mannersdorf - SC Fortuna Wiener Neustadt II im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 16.05.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275435" title="Gebietsliga Süd/Südost • Runde 22" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 22
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1338" href="https://ticker.ligaportal.at/mannschaft/1338/ask-eggendorf" title="ASK Eggendorf">
+                    
+                    
+                        
+                            ASK Eggendorf
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/club/club-1222-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - Eggendorf ASK" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    16:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271379/ask-eggendorf-gegen-ask-mannersdorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Eggendorf - ASK Mannersdorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 23.05.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275436" title="Gebietsliga Süd/Südost • Runde 23" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 23
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    17:00
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/club/club-1116-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - SC Weissenbach" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1232" href="https://ticker.ligaportal.at/mannschaft/1232/sc-weissenbach" title="SG Weissenbach/Klausen-L./A.">
+                    
+                    
+                        
+                            Weissenbach/Klausen-L…
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271384/ask-mannersdorf-gegen-sc-weissenbach" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Mannersdorf - SG Weissenbach/Klausen-L./A. im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 30.05.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275437" title="Gebietsliga Süd/Südost • Runde 24" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 24
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    17:00
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1325-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - SC Himberg" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1325" href="https://ticker.ligaportal.at/mannschaft/1325/sc-himberg" title="SC Himberg">
+                    
+                    
+                        
+                            SC Himberg
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271394/ask-mannersdorf-gegen-sc-himberg" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASK Mannersdorf - SC Himberg im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>So., 06.06.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275438" title="Gebietsliga Süd/Südost • Runde 25" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 25
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1203" href="https://ticker.ligaportal.at/mannschaft/1203/asv-voesendorf" title="ASV Vösendorf">
+                    
+                    
+                        
+                            ASV Vösendorf
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/team/team-1203-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASV Vösendorf" height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    17:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271396/asv-voesendorf-gegen-ask-mannersdorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau ASV Vösendorf - ASK Mannersdorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+        
+        
+        <tr>
+            <td colspan="2" class="pl-2 pl-md-0">
+                <strong>Fr., 11.06.2027</strong>
+            </td>
+            <td colspan="3" class="roundNr text-right pr-2 pr-md-0">
+                <a href="https://ticker.ligaportal.at/spielplan/93/gebietsliga-sued-suedost/275439" title="Gebietsliga Süd/Südost • Runde 26" data-toggle="tooltip" data-placement="left" class="text-muted">
+                    
+                        Runde 26
+                    
+                </a>
+            </td>
+        </tr>
+        <tr class="game-row gameNotStarted">
+            <td class="slt px-0 px-md-1">
+                
+            </td>
+            <td class="team text-right">
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1227" href="https://ticker.ligaportal.at/mannschaft/1227/usc-kirchschlag" title="USC Kirchschlag">
+                    
+                    
+                        
+                            USC Kirchschlag
+                        
+                    
+                </a>&nbsp;<img data-src="https://static.ligaportal.at/images/club/club-1111-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - USC Kirchschlag/BW " height="16" width="16" https="null" class="lazy">
+            </td>
+            <td class="score text-center text-nowrap px-1 px-md-3">
+                
+                    18:30
+                
+            </td>
+            <td class="team text-left">
+                <img data-src="https://static.ligaportal.at/images/team/team-1323-small.png" src="https://static.ligaportal.at/images/default-logo-flat-2024.png" lazy="true" alt="Team - ASK Mannersdorf" height="16" width="16" https="null" class="lazy">&nbsp;
+                <a class="quickInfo discreetLink text-blue-darker text-nowrap text-truncate" rel="null/1323" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf" title="ASK Mannersdorf">
+                    
+                    
+                        
+                            ASK Mannersdorf
+                        
+                    
+                </a>
+            </td>
+            <td class="text-right button-holder px-0 pl-md-1 pr-md-0">
+                
+
+<div class="btn-group d-none d-md-flex">
+	
+	
+		
+			
+				
+				
+					<a href="https://ticker.ligaportal.at/live-ticker/1271407/usc-kirchschlag-gegen-ask-mannersdorf" data-color="warning" class="bttnYellow btn btn-sm btn-warning-light w-100" title="Spielvorschau USC Kirchschlag - ASK Mannersdorf im Live-Ticker" target="">
+						<span>zum Ticker</span>
+						
+							<i class="fas fa-chevron-right ml-1"></i>
+						
+					</a>
+				
+			
+		
+	
+	
+</div>
+<div class="action-icons d-md-none text-left">
+	
+	
+		<i class="fas fa-user-check text-secondary"></i>
+	
+	
+</div>
+            </td>
+        </tr>
+        
+    
+    </tbody>
+</table>
+							</section>
+						
+
+					</div>
+				</div>
+
+			</div>
+
+            <div class="col-sm-12 col-lg-4 area-right mb-3">
+                
+                    <div class="sponsor3container text-center mb-3">
+                        <div id="sas_22373" class="cad medrec" data-ad-unit-id="22373"></div>
+
+                    </div>
+                
+                
+
+                
+					
+					
+                	<div class="lazy lazy-ajax" data-loader="rankingLoader" data-src="https://ticker.ligaportal.at/liveTicker/tableResponsive/93" data-highlight="">
+	<div class="card card-ranking mb-3" style="min-height:200px;">
+		<div class="card-header bg-white px-3">
+			<img src="https://static.ligaportal.at/images/default-logo-flat.png" height="28" class="float-left mr-2" alt="Logo"> Tabelle
+		</div>
+		<div class="card-body text-center bg-white my-3"><i class="fas fa-circle-notch fa-spin mr-2 text-muted"></i> Lade Tabelle</div>
+	</div>
+</div>
+            
+        </div>
+
+    </div>
+
+    <footer id="footer" class="bg-dark text-white px-3 py-4">
+        <div class="container-fluid">
+            <div class="row text-center text-md-left">
+                <div class="col-12 col-md-6 col-lg-3">
+	<h6 class="text-orange text-uppercase">Top-Ligen</h6>
+	<ul class="list-unstyled">
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/177/bundesliga">Admiral Bundesliga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/3/2-liga">Admiral 2. Liga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/194/deutsche-bundesliga">Deutsche Bundesliga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/200/2-bundesliga-bundesliga">2. DE Bundesliga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2734/3-deutsche-liga">3. Deutsche Liga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/195/premier-league">Premier League</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/199/primera-division">Primera Division</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/201/serie-a">Serie A</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/1433/schweizer-super-league">Schweizer Super League</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2071/ligue-1-frankreich">Ligue 1</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2687/eredivisie">Eredivisie</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2688/primeira-liga">Primeira Liga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2061/sueper-lig-tuerkische-erste-liga">Türkische 1. Liga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/203/champions-league">Champions League</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/176/europa-league">Europa League</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2697/europa-conference-league">Conference League</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2503/nations-league">Nations League</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/1415/europameisterschaft">Euro 2028</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2294/fussball-wm">WM 2026</a></li>
+	</ul>
+</div>
+<div class="col-12 col-md-6 col-lg-3">
+	<h6 class="text-orange text-uppercase"><a href="https://www.ligaportal.at/" class="text-orange" target="_blank">Fussball in Österreich</a></h6>
+	<ul class="list-unstyled">
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/bgld/" title="Fußball Burgenland" target="_blank">Fußball im Burgenland</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/ktn/" title="Fußball Kärnten" target="_blank">Fußball in Kärnten</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/noe/" title="Fußball Niederösterreich" target="_blank">Fußball in Niederösterreich</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/ooe/" target="_blank" title="Fußball Oberösterreich">Fußball in Oberösterreich</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/sbg/" target="_blank" title="Fußball Salzburg">Fußball in Salzburg</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/stmk/" target="_blank" title="Fußball Steiermark">Fußball in der Steiermark</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/wien/" target="_blank" title="Fußball Wien">Fußball in Wien</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/tir/" target="_blank" title="Fußball Tirol">Fußball in Tirol</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/vbg/" target="_blank" title="Fußball Vorarlberg">Fußball in Vorarlberg</a></li>
+	</ul>
+	<h6 class="text-orange text-uppercase"><a href="https://www.ligaportal.at/international/frauen" class="text-orange" target="_blank">Frauen-Fußball</a></h6>
+	<ul class="list-unstyled">
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/287/oefb-frauen-bundesliga">Frauen Bundesliga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2733/2-frauen-bundesliga">2. Frauen Bundesliga</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2802/womens-champions-league">Women's Champions League</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/3236/uefa-womens-europa-cup">Women's Europa Cup</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/spielplan/2887/uefa-womens-nations-league">Women's Nations League</a></li>
+	</ul>
+</div>
+<div class="col-12 col-md-6 col-lg-3">
+	<h6 class="text-orange text-uppercase"><a href="https://ticker.ligaportal.at/" class="text-orange">Liveticker</a></h6>
+	<ul class="list-unstyled">
+		
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/">Fußball Live-Ticker</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/fussball-app/" title="Fußball-App">Smartphone App</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/registrieren" title="Werde Live-Ticker-Reporter">Ticker-Reporter werden</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/reporter-rangliste" title="Ranking der Top Live-Ticker-Reporter">Reporter-Rangliste</a></li>
+		<li><a href="https://ticker.ligaportal.at/meistgesehene-spiele" class="btn btn-sm btn-link text-white px-0 py-md-0" title="Meistgesehene Spiele">Meistgesehene Spiele</a></li>
+		<li><a href="https://ticker.ligaportal.at/spiele-finden" class="btn btn-sm btn-link text-white px-0 py-md-0">Spiele finden</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/sportwetten/">Sportwetten</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://www.ligaportal.at/jobs/">Jobs bei Ligaportal</a></li>
+	</ul>
+	
+</div>
+<div class="col-12 col-md-6 col-lg-3">
+	<h6 class="text-orange text-uppercase">Hilfe &amp; Info</h6>
+	<ul class="list-unstyled">
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ligaportal.uservoice.com/knowledgebase" target="_blank" title="FAQ (Häufig gestellte Fragen)">FAQ</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/spielplan#" id="supportLink" title="Support">Support</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://static.ligaportal.at/files/Benutzerhandbuch_Datencenter.pdf" target="_blank">Benutzerhandbuch</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/mannschaft/1323/ask-mannersdorf/spielplan#" id="contactLink" title="Feedback">Kontakt &amp; Feedback</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" target="_blank" href="https://www.ligaportal.at/service/nutzungsbedingungen">Nutzungsbedingungen</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" target="_blank" href="https://www.ligaportal.at/service/datenschutzerklaerung">Datenschutz</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/barrierefreiheit">Barrierefreiheitserklärung</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0">Cookie-Einstellungen</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/impressum">Impressum</a></li>
+	</ul>
+	<h6 class="text-orange text-uppercase">DSA</h6>
+	<ul class="list-unstyled">
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/digital-services-act">Informationen gemäß DSA</a></li>
+		<li><a class="btn btn-sm btn-link text-white px-0 py-md-0" href="https://ticker.ligaportal.at/internes-beschwerdemanagement" style="white-space: unset;text-align: left;">Internes Beschwerde­management</a></li>
+	</ul>
+</div>
+<div class="col-12 text-center py-3 px-0">
+	<a href="http://www.oewa.at/" target="_blank" rel="noopener">
+		<img data-src="https://static.ligaportal.at/images/oewa-pruefsiegel.png" alt="ÖWA Prüfsiegel" height="125" style="max-height:125px;" class="lazy" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+	</a>
+</div>
+<div class="col-12 col-md-6 text-center text-md-left text-muted-light py-3 px-0 px-md-3">
+	Copyright © 2011 - 2026 Ligaportal GmbH
+</div>
+<div class="col-12 col-md-6 text-center text-md-right lead social-bottons">
+	<a class="text-muted-light px-1" href="https://www.facebook.com/ligaportal.oberoesterreich/" target="_blank" title="Ligaportal Facebook"><i class="fab fa-facebook"></i></a>
+	<a class="text-muted-light px-1" href="https://www.instagram.com/ligaportalatofficial/" target="_blank" title="Ligaportal auf Instagram"><i class="fab fa-instagram"></i></a>
+	<a class="text-muted-light px-1" href="https://twitter.com/ligaportal_at" target="_blank" title="Ligaportal auf Twitter"><i class="fab fa-twitter"></i></a>
+	<a class="text-muted-light px-1" href="https://www.youtube.com/user/ligaportal" target="_blank" title="Ligaportal YouTube Channel"><i class="fab fa-youtube"></i></a>
+	<a class="text-muted-light px-1" href="http://itunes.apple.com/at/app/ligaportal-unterhaus-live/id527645718?mt=8" target="_blank" title="Ligaportal iPhone App"><i class="fab fa-apple"></i></a>
+	<a class="text-muted-light px-1" href="https://play.google.com/store/apps/details?id=com.quapoo.ligaportalUnterhausLiveTicker&amp;referrer=utm_source%3Dticker%26utm_medium%3Dlink" target="_blank" title="Ligaportal Android App"><i class="fab fa-android"></i></a>
+</div>
+
+            </div>
+        </div>
+    </footer>
+
+    <script type="text/javascript">
+  UserVoice=window.UserVoice||[];(function(){var uv=document.createElement('script');uv.type='text/javascript';uv.async=true;uv.src='//widget.uservoice.com/s5bYbdbg0fZRnGVOcSR9nw.js';var s=document.getElementsByTagName('script')[0];s.parentNode.insertBefore(uv,s)})();
+
+  UserVoice.push(['set', {
+    accent_color: '#448dd6',
+    trigger_color: 'white',
+    trigger_background_color: '#f19300',
+    menu_enabled: false
+  }]);
+
+  UserVoice.push(['identify', {
+  }]);
+
+  UserVoice.push(['addTrigger', {mode: 'contact', trigger_position: 'bottom-right' }]);
+
+  UserVoice.push(['autoprompt', {}]);
+
+  if($('#contactLink').length > 0) {
+    UserVoice.push(['addTrigger', '#contactLink', { mode: 'contact' }]);
+  }
+  if($('#supportLink').length > 0) {
+    UserVoice.push(['addTrigger', '#supportLink', { mode: 'contact' }]);
+  }
+  if($('#helpLink').length > 0) {
+    UserVoice.push(['addTrigger', '#helpLink', { mode: 'contact' }]);
+  }
+
+</script>
+
+	<!-- first-id -->
+<script type="text/javascript">
+    window.__tcfapi('addEventListener', 2, function(tcData, success) {
+        if (success) {
+            // Consent already exists and is valid on First-ID (vendor_id: 1178)
+            if (tcData.eventStatus === 'tcloaded' && tcData.vendor.consents[1178] === true ) {
+                if(Cookies.get('lp_firstid_consent') == undefined) {
+                    Cookies.set('lp_firstid_consent', 'yes', { expires: 182, path: '/' });
+                }
+                // The user just gave or updated their consent
+            } else if (tcData.eventStatus === 'useractioncomplete') {
+                if (tcData.vendor.consents[1178] === true) {
+                    Cookies.set('lp_firstid_consent', 'yes', { expires: 182, path: '/' });
+                } else {
+                    Cookies.remove('lp_firstid_consent');
+                }
+                
+            }
+        }
+    });
+
+    
+</script>
+
+
+<script type="didomi/javascript" data-vendor="firstid-gTwRBEyP" src="https://cdn.first-id.fr/sdk/loader/loader.min.js"></script>
+<script type="didomi/javascript" data-vendor="firstid-gTwRBEyP">
+    // You can wait the end of the initialization to get the result
+    document.addEventListener('firstId:initialized', (event) => {
+        console.log('First-id initialized:', event.detail);
+        // You can retrieve the First-id, it could be null
+        console.log('First-id:', event.detail.firstId);
+
+        // You can retrieve the First-id when you want thanks to
+        try {
+            FIRSTID.getId() // You can access to the First-id SDK with the global variable "FIRSTID", this method return the First-id value
+        } catch (e) {
+            // Can return an error if no cookie has been set
+            if (e.code === 'FirstIdCookieNotFound') {
+                console.log('First-id cookie not found');
+            }
+        }
+    });
+
+    // You can specify a configuration on the window.firstId
+    window.firstId = window.firstId || {
+        debug: false, // If you want to see the logs of the SDK
+        cookieName: 'firstid', // The name of the cookie where you put the First-id value
+
+        // User hashed email value
+        //emailCookieName: 'hashed-email', // The name of the cookie where we can find the hashed email value after the user login
+        
+        emailGetterCallback: null, // OR a callback to get the hashed email value of the user
+
+        refreshCookieName: 'firstid_refresh', // the name of the cookie that SDK create to tell you to make a redirect to our gate to resync the First-id value
+    };
+
+    
+</script>
+	
+
+	<!-- Google Analytics -->
+<script type="didomi/javascript" data-vendor="googleana-4TXnJigR" async="" src="https://www.googletagmanager.com/gtag/js?id=G-9SNX94NY66"></script>
+<script type="didomi/javascript" data-vendor="googleana-4TXnJigR">
+    var gaProperty = 'G-9SNX94NY66';
+    var disableStr = 'ga-disable-' + gaProperty;
+    if (document.cookie.indexOf(disableStr + '=true') > -1) {
+        window[disableStr] = true;
+    }
+    function gaOptout() {
+        document.cookie = disableStr + '=true; expires=Thu, 31 Dec 2099 23:59:59 UTC; path=/';
+        window[disableStr] = true;
+        alert('Das Tracking ist jetzt deaktiviert');
+    }
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-9SNX94NY66');
+
+    googleAnalyticsFired = true;
+    if(typeof debugFaktor !== 'undefined' && debugFaktor) {
+        if (typeof(toastr) !== 'undefined') {
+            toastr.success('Fire Google Analytics');
+        } else {
+            $('#message-container').append('<p class="message alert alert-info border-dark">Fire Google Analytics</p>');
+        }
+        console.log('Fire Google Analytics');
+    }
+</script>
+<!-- /Google Analytics -->
+
+    <script type="text/javascript">
+        var isPremium = false;
+        var goalSoundGame = '';
+        var doGoalSound = isPremium || goalSoundGame.length > 0;
+        var allowGoalSound = false;
+
+        function trackAnalyticsViewCount() {
+            if(googleAnalyticsFired && typeof ga != 'undefined') {
+                ga('send', 'event', 'ViewCount', 'Team', '1323');
+                ga('send', 'event', 'ViewCount', 'CompetitionComplete', '93');
+                ga('send', 'event', 'PageName', 'noe/gebietsliga/gebietsliga-sued-suedost');
+            }
+        }
+    </script>
+
+
+
+		</div>
+
+
+
+		<!-- competition selection -->
+<div class="modal modal-fullscreen" id="pickLeagueModal" tabindex="-1" role="dialog" aria-labelledby="pickLeagueModalLabel" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="pickLeagueModalLabel">Liga auswählen</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">×</span>
+				</button>
+			</div>
+			<div class="modal-body pt-1">
+				<div id="drilldown">
+					<div class="drilldown-body">
+						<p class="jumbotron bg-white text-center text-secondary lead">
+							<i class="fas fa-circle-notch fa-spin mr-2"></i> Lade Ligen-Struktur...
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+		<!-- facebook login expiration modal -->
+<div class="modal modal-fullscreen" id="facebookExpiredModal" tabindex="-1" role="dialog" aria-labelledby="facebookExpiredModalLabel" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="facebookExpiredModalLabel"><i class="fab fa-facebook-square mr-2 text-blue-dark"></i> Facebook Login ungültig</h5>
+			</div>
+			<div class="modal-body">
+				<p class="jumbotron bg-white lead py-0">
+					Deine Facebook Login Sitzung ist nicht mehr gültig. Dies kann folgende Ursachen haben:
+				</p>
+				<ol class="pb-3 pl-md-5">
+					<li>Du hast dich von Facebook abgemeldet</li>
+					<li>Du hast dein Facebook Passwort geändert</li>
+					<li>Du hast "Ligaportal" unter "Apps und Websites" in den Facebook-Einstellungen gelöscht</li>
+				</ol>
+				<p class="jumbotron bg-white lead py-0">
+					Du wirst nun ausgeloggt!
+				</p>
+				<div class="row">
+					<div class="col-12 col-md-6">
+						<a href="https://ticker.ligaportal.at/login/auth" class="btn btn-primary btn-large btn-block">Hier wieder einloggen</a>
+					</div>
+					<div class="col-12 col-md-6">
+						<button type="button" data-dismiss="modal" aria-label="Close" class="btn btn-secondary btn-large btn-block">Verstanden</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+	
+<div data-html2canvas-ignore="true" class="uv-icon uv-bottom-right"><button class="uv-icon-trigger" aria-label="Open Contact Widget"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="39px" height="39px" viewBox="0 0 39 39" enable-background="new 0 0 39 39" xml:space="preserve">
+<g>
+	<path class="uv-bubble-background" fill="rgba(46, 49, 51, 0.6)" d="M31.425,34.514c-0.432-0.944-0.579-2.007-0.591-2.999c4.264-3.133,7.008-7.969,7.008-13.409
+		C37.842,8.658,29.594,1,19.421,1S1,8.658,1,18.105c0,9.446,7.932,16.79,18.105,16.79c1.845,0,3.94,0.057,5.62-0.412
+		c0.979,1.023,2.243,2.3,2.915,2.791c3.785,2.759,7.571,0,7.571,0S32.687,37.274,31.425,34.514z" style="fill: rgb(241, 147, 0);"></path>
+	<g>
+		<g>
+			<path class="uv-bubble-foreground" fill="#FFFFFF" d="M16.943,19.467c0-3.557,4.432-3.978,4.432-6.058c0-0.935-0.723-1.721-2.383-1.721
+				c-1.508,0-2.773,0.725-3.709,1.87l-2.441-2.743c1.598-1.9,4.01-2.924,6.602-2.924c3.891,0,6.271,1.959,6.271,4.765
+				c0,4.4-5.037,4.732-5.037,7.265c0,0.481,0.243,0.994,0.574,1.266l-3.316,0.965C17.303,21.459,16.943,20.522,16.943,19.467z
+				 M16.943,26.19c0-1.326,1.114-2.441,2.44-2.441c1.327,0,2.442,1.115,2.442,2.441c0,1.327-1.115,2.441-2.442,2.441
+				C18.058,28.632,16.943,27.518,16.943,26.19z" style="fill: white;"></path>
+		</g>
+	</g>
+</g>
+</svg>
+</button></div></body></html>

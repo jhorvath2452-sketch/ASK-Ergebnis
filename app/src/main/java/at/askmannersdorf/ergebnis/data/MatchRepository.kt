@@ -9,7 +9,11 @@ data class FetchOutcome(
     val log: List<String>,
     /** Rohtext der Quellen – hilft beim Nachjustieren, falls etwas nicht erkannt wird. */
     val rawText: String,
+    /** U23-Ergebnis aus dem Liveticker, z. B. "1-1" */
+    val u23: String? = null,
 )
+
+data class ScheduleOutcome(val games: List<LigaportalSchedule.Game>, val log: String)
 
 /**
  * Reihenfolge der Quellen:
@@ -212,6 +216,68 @@ class MatchRepository(context: Context) {
         } catch (e: Exception) {
             null
         }
+    }
+
+    // ── Spielplan + Liveticker (Auswahl eines Spiels) ──────────────
+
+    /** Alle Spiele aus dem Ligaportal-Mannschaftsspielplan. */
+    suspend fun loadSchedule(s: AppSettings): ScheduleOutcome {
+        if (s.ligaportalUrl.isBlank()) return ScheduleOutcome(emptyList(), "Kein Ligaportal-Spielplan in den Einstellungen.")
+        fun parse(h: String) = runCatching { LigaportalSchedule.parse(h) }.getOrDefault(emptyList())
+        var games = fetchHtml(s.ligaportalUrl)?.let { h ->
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { parse(h) }
+        }.orEmpty()
+        var via = "direkt"
+        if (games.isEmpty()) {
+            val rendered = extractor.loadRenderedHtml(s.ligaportalUrl, 30_000) { h -> h.contains("game-row") && h.contains("live-ticker") }
+            games = rendered?.let { h -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { parse(h) } }.orEmpty()
+            via = "über Browser-Ansicht"
+        }
+        return ScheduleOutcome(
+            games,
+            if (games.isEmpty()) "Spielplan konnte nicht gelesen werden." else "${games.size} Spiele geladen ($via).",
+        )
+    }
+
+    /** Ergebnis, Halbzeit, Torschützen und U23 eines Spiels aus seinem Liveticker. */
+    suspend fun fetchFromTicker(s: AppSettings, game: LigaportalSchedule.Game): FetchOutcome {
+        val log = mutableListOf<String>()
+        val url = game.tickerUrl ?: return FetchOutcome(null, listOf("Für dieses Spiel gibt es keinen Liveticker-Link."), "")
+        fun json(h: String) = runCatching { LigaportalTicker.extractJson(h) }.getOrNull()
+        var obj = fetchHtml(url)?.let { h -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { json(h) } }
+        if (obj == null) {
+            log += "Liveticker direkt nicht lesbar – versuche Browser-Ansicht."
+            val rendered = extractor.loadRenderedHtml(url, 35_000) { h -> h.contains("initialData") }
+            obj = rendered?.let { h -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { json(h) } }
+        }
+        if (obj == null) {
+            log += "Liveticker konnte nicht ausgelesen werden."
+            // Ersatz: Spielplan-Daten (Ergebnis + Halbzeit, ohne Torschützen)
+            val m = if (game.isPlayed) Match(
+                homeTeam = game.home, awayTeam = game.away, homeGoals = game.homeGoals, awayGoals = game.awayGoals,
+                halfHome = game.halfHome, halfAway = game.halfAway, date = game.date,
+                competition = game.round?.let { "Runde $it" }.orEmpty(), source = "Ligaportal-Spielplan",
+            ) else null
+            if (m != null) log += "Ergebnis aus dem Spielplan übernommen – Torschützen bitte eintragen."
+            return FetchOutcome(m, log, "")
+        }
+        val r = LigaportalTicker.parse(obj, s.clubKeyword)
+        val m = r.match
+        val raw = buildString {
+            append("── Liveticker ($url) ──\n")
+            append("${m.homeTeam} ${m.homeGoals}:${m.awayGoals} (${m.halfHome}:${m.halfAway}) ${m.awayTeam}\n")
+            m.goals.forEach { append("${it.minute} ${it.scorer.ifBlank { "(Gegner)" }} ${if (it.forAsk) "ASK" else "Gegner"}\n") }
+            r.u23?.let { append("U23: $it\n") }
+        }
+        when {
+            m.homeGoals == null -> log += "Liveticker: Spiel hat noch kein Ergebnis."
+            !r.finished -> log += "Liveticker: ${m.homeTeam} ${m.homeGoals}:${m.awayGoals} ${m.awayTeam} – Spiel läuft noch bzw. nicht als beendet markiert."
+            else -> log += "Liveticker: ${m.homeTeam} ${m.homeGoals}:${m.awayGoals} (${m.halfHome}:${m.halfAway}) ${m.awayTeam}"
+        }
+        if (m.goals.isNotEmpty()) log += "Torschützen aus ${r.goalSource}."
+        else if ((m.homeGoals ?: 0) + (m.awayGoals ?: 0) > 0) log += "Keine Torschützen im Liveticker – bitte eintragen."
+        r.u23?.let { log += "U23-Ergebnis gefunden: $it" }
+        return FetchOutcome(m, log, raw, r.u23)
     }
 
     private suspend fun fetchFromLigaportal(s: AppSettings, log: MutableList<String>, raw: StringBuilder): Match? {

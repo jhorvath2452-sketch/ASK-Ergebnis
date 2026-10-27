@@ -96,17 +96,50 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         regenerateFlyer()
     }
 
+    // ── Spielplan / Auswahl ────────────────────────────────────────
+
+    var games by mutableStateOf<List<at.askmannersdorf.ergebnis.data.LigaportalSchedule.Game>>(emptyList()); private set
+    var selectedGame by mutableStateOf<at.askmannersdorf.ergebnis.data.LigaportalSchedule.Game?>(null)
+    var scheduleLoading by mutableStateOf(false); private set
+    var scheduleStatus by mutableStateOf<String?>(null); private set
+
+    init { loadSchedule() }
+
+    fun loadSchedule() {
+        if (scheduleLoading) return
+        scheduleLoading = true
+        scheduleStatus = "Lade Spielplan …"
+        viewModelScope.launch {
+            try {
+                val r = repo.loadSchedule(settings)
+                val keep = selectedGame?.tickerUrl
+                games = r.games
+                selectedGame = r.games.firstOrNull { it.tickerUrl != null && it.tickerUrl == keep }
+                    ?: at.askmannersdorf.ergebnis.data.LigaportalSchedule.latestPlayed(r.games)
+                    ?: r.games.firstOrNull()
+                scheduleStatus = r.log
+            } catch (e: Throwable) {
+                scheduleStatus = "Spielplan: ${e.message ?: e.javaClass.simpleName}"
+            } finally {
+                scheduleLoading = false
+            }
+        }
+    }
+
     // ── Spiel ──────────────────────────────────────────────────────
 
     fun fetchMatch() {
         if (fetching) return
         fetching = true
-        fetchLog = listOf("Frage Ligaportal / LMO ab …")
+        val game = selectedGame
+        fetchLog = listOf(if (game != null) "Frage Liveticker ab: ${game.home} – ${game.away} …" else "Frage Ligaportal / LMO ab …")
         viewModelScope.launch {
             try {
-                val r = repo.fetchLatest(settings)
+                val r = if (game?.tickerUrl != null) repo.fetchFromTicker(settings, game) else repo.fetchLatest(settings)
                 fetchLog = r.log
                 rawText = r.rawText
+                // U23 aus dem Ticker übernehmen, wenn noch nichts eingetragen ist
+                r.u23?.let { if (u23Result.isBlank()) u23Result = it }
                 r.match?.let { m ->
                     val oppChanged = m.opponent(settings.clubKeyword) != match.opponent(settings.clubKeyword)
                     match = m

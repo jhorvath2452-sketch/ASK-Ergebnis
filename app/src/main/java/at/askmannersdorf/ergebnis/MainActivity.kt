@@ -143,13 +143,41 @@ private fun MainScreen(vm: AppViewModel, activity: ComponentActivity) {
 private fun MatchSection(vm: AppViewModel) {
     var showRaw by remember { mutableStateOf(false) }
     val m = vm.match
-    Section("1 · Letztes Spiel") {
+    var gameMenu by remember { mutableStateOf(false) }
+    Section("1 · Spiel") {
+        Column {
+            OutlinedButton(onClick = { if (vm.games.isNotEmpty()) gameMenu = true else vm.loadSchedule() }, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    vm.selectedGame?.label() ?: if (vm.scheduleLoading) "Spielplan wird geladen …" else "Spielplan laden",
+                    modifier = Modifier.weight(1f), maxLines = 2,
+                )
+                Text(" ▾")
+            }
+            DropdownMenu(gameMenu, { gameMenu = false }) {
+                vm.games.forEach { g ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                g.label(),
+                                fontWeight = if (g == vm.selectedGame) FontWeight.Bold else FontWeight.Normal,
+                                color = if (g.isPlayed) Color.Unspecified else Color.Gray,
+                            )
+                        },
+                        onClick = { vm.selectedGame = g; gameMenu = false },
+                    )
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(vm.scheduleStatus.orEmpty(), fontSize = 12.sp, color = Color.Gray, modifier = Modifier.weight(1f))
+            TextButton(onClick = vm::loadSchedule, enabled = !vm.scheduleLoading) { Text("Neu laden") }
+        }
         Button(onClick = vm::fetchMatch, enabled = !vm.fetching, modifier = Modifier.fillMaxWidth()) {
             if (vm.fetching) {
                 CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
                 Text("Wird abgefragt …")
-            } else Text("Ergebnis abrufen (Ligaportal / LMO)")
+            } else Text(if (vm.selectedGame != null) "Ergebnis abrufen (Liveticker)" else "Ergebnis abrufen")
         }
         vm.fetchLog.forEach { Text("• $it", fontSize = 13.sp, color = Color.DarkGray) }
 

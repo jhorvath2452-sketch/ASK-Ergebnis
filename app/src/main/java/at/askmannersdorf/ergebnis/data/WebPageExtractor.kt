@@ -131,6 +131,51 @@ class WebPageExtractor(private val context: Context) {
         }
     }
 
+    /**
+     * Seite wie ein Browser laden und den fertig gerenderten HTML-Code liefern
+     * (Ersatzweg, falls der direkte Abruf blockiert wird). Wiederholt die Abfrage,
+     * bis [accept] zufrieden ist oder [timeoutMs] abläuft.
+     */
+    @SuppressLint("SetJavaScriptEnabled")
+    suspend fun loadRenderedHtml(url: String, timeoutMs: Long = 30_000, accept: (String) -> Boolean): String? =
+        withContext(Dispatchers.Main) {
+            val webView = WebView(context.applicationContext)
+            val done = CompletableDeferred<String>()
+            var last: String? = null
+            val handler = Handler(Looper.getMainLooper())
+            try {
+                webView.settings.javaScriptEnabled = true
+                webView.settings.domStorageEnabled = true
+                webView.settings.userAgentString = webView.settings.userAgentString.replace("; wv", "")
+                webView.measure(
+                    android.view.View.MeasureSpec.makeMeasureSpec(1080, android.view.View.MeasureSpec.EXACTLY),
+                    android.view.View.MeasureSpec.makeMeasureSpec(2400, android.view.View.MeasureSpec.EXACTLY),
+                )
+                webView.layout(0, 0, 1080, 2400)
+                val poll = object : Runnable {
+                    override fun run() {
+                        if (done.isCompleted) return
+                        webView.evaluateJavascript("document.documentElement.outerHTML") { res ->
+                            val html = runCatching { org.json.JSONArray("[$res]").getString(0) }.getOrNull()
+                            if (html != null) {
+                                last = html
+                                val ok = try { accept(html) } catch (t: Throwable) { false }
+                                if (ok && !done.isCompleted) done.complete(html)
+                            }
+                        }
+                        handler.postDelayed(this, 1500)
+                    }
+                }
+                webView.webViewClient = WebViewClient()
+                webView.loadUrl(url)
+                handler.postDelayed(poll, 2000)
+                withTimeoutOrNull(timeoutMs) { done.await() } ?: last
+            } finally {
+                handler.removeCallbacksAndMessages(null)
+                handler.post { webView.stopLoading(); webView.destroy() }
+            }
+        }
+
     private fun parseSnapshot(data: String?): PageSnapshot? {
         if (data.isNullOrBlank()) return null
         return try {
